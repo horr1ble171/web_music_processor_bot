@@ -1,35 +1,113 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Музыка для профиля</title>
-  <link rel="stylesheet" href="style.css">
-  <script src="https://unpkg.com/jsmediatags@3.9.7/dist/jsmediatags.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/browser-id3-writer@4.0.0/dist/browser-id3-writer.min.js"></script>
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Музыка для профиля</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://unpkg.com/jsmediatags@3.9.7/dist/jsmediatags.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/browser-id3-writer@4.0.0/dist/browser-id3-writer.min.js"></script>
 </head>
 <body>
-  <div class="container">
-    <h1>🎵 Музыка для профиля</h1>
-    <p>Добавь теги и обложку к своим MP3-файлам</p>
+    <div class="blur-background" id="blurBackground"></div>
 
-    <label>MP3 файлы:</label>
-    <input type="file" id="audioFiles" multiple accept=".mp3"><br>
+    <div class="header">
+        <h1>Музыка для профиля</h1>
+        <p>Обработка MP3 файлов с добавлением метаданных и обложки</p>
+    </div>
 
-    <label>Обложка:</label>
-    <input type="file" id="coverImage" accept="image/*"><br>
+    <div class="card" id="mainInterface">
+        <div class="card-title">Загрузка файлов</div>
 
-    <input type="text" id="trackTitle" placeholder="Название трека">
-    <input type="text" id="artistName" placeholder="Исполнитель">
-    <input type="text" id="albumName" placeholder="Альбом"><br>
+        <div class="input-group">
+            <label class="input-label">MP3 файлы</label>
+            <label class="custum-file-upload" for="audioFiles">
+                <div class="icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                        <path d="M10 1C9.73478 1 9.48043 1.10536 9.29289 1.29289L3.29289 7.29289C3.10536 7.48043 3 7.73478 3 8V20C3 21.6569 4.34315 23 6 23H7C7.55228 23 8 22.5523 8 22C8 21.4477 7.55228 21 7 21H6C5.44772 21 5 20.5523 5 20V9H10C10.5523 9 11 8.55228 11 8V3H18C18.5523 3 19 3.44772 19 4V9C19 9.55228 19.4477 10 20 10C20.5523 10 21 9.55228 21 9V4C21 2.34315 19.6569 1 18 1H10ZM9 7H6.41421L9 4.41421V7ZM14 15.5C14 14.1193 15.1193 13 16.5 13C17.8807 13 19 14.1193 19 15.5V16V17H20C21.1046 17 22 17.8954 22 19C22 20.1046 21.1046 21 20 21H13C11.8954 21 11 20.1046 11 19C11 17.8954 11.8954 17 13 17H14V16V15.5ZM16.5 11C14.142 11 12.2076 12.8136 12.0156 15.122C10.2825 15.5606 9 17.1305 9 19C9 21.2091 10.7909 23 13 23H20C22.2091 23 24 21.2091 24 19C24 17.1305 22.7175 15.5606 20.9844 15.122C20.7924 12.8136 18.858 11 16.5 11Z"/>
+                    </svg>
+                </div>
+                <div class="text">
+                    <span>Нажмите для загрузки MP3 файлов</span>
+                </div>
+                <input type="file" id="audioFiles" multiple accept=".mp3">
+            </label>
+            <div class="file-list" id="audioFileList"></div>
+        </div>
 
-    <button id="processButton">Обработать</button>
-    <button id="sendToBotButton">📤 Отправить в бота</button>
+        <div class="input-group">
+            <label class="input-label">Обложка</label>
+            <label class="custum-file-upload" for="coverImage">
+                <div class="icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                        <path d="M10 1C9.73478 1 9.48043 1.10536 9.29289 1.29289L3.29289 7.29289C3.10536 7.48043 3 7.73478 3 8V20C3 21.6569 4.34315 23 6 23H7C7.55228 23 8 22.5523 8 22C8 21.4477 7.55228 21 7 21H6C5.44772 21 5 20.5523 5 20V9H10C10.5523 9 11 8.55228 11 8V3H18C18.5523 3 19 3.44772 19 4V9C19 9.55228 19.4477 10 20 10C20.5523 10 21 9.55228 21 9V4C21 2.34315 19.6569 1 18 1H10ZM9 7H6.41421L9 4.41421V7ZM14 15.5C14 14.1193 15.1193 13 16.5 13C17.8807 13 19 14.1193 19 15.5V16V17H20C21.1046 17 22 17.8954 22 19C22 20.1046 21.1046 21 20 21H13C11.8954 21 11 20.1046 11 19C11 17.8954 11.8954 17 13 17H14V16V15.5ZM16.5 11C14.142 11 12.2076 12.8136 12.0156 15.122C10.2825 15.5606 9 17.1305 9 19C9 21.2091 10.7909 23 13 23H20C22.2091 23 24 21.2091 24 19C24 17.1305 22.7175 15.5606 20.9844 15.122C20.7924 12.8136 18.858 11 16.5 11Z"/>
+                    </svg>
+                </div>
+                <div class="text">
+                    <span>Нажмите для загрузки обложки</span>
+                </div>
+                <img class="preview-image" id="coverPreview" alt="Предпросмотр обложки">
+                <input type="file" id="coverImage" accept=".jpg,.jpeg,.png">
+            </label>
+        </div>
 
-    <div id="downloadLinks"></div>
-  </div>
+        <div class="input-group">
+            <label class="input-label" for="trackTitle">Название трека</label>
+            <input type="text" autocomplete="off" class="input" id="trackTitle" placeholder="Введите название трека">
+        </div>
 
-  <script src="script.js"></script>
+        <div class="input-group">
+            <label class="input-label" for="artistName">Исполнитель</label>
+            <input type="text" autocomplete="off" class="input" id="artistName" placeholder="Введите имя исполнителя">
+        </div>
+
+        <div class="input-group">
+            <label class="input-label" for="albumName">Название альбома</label>
+            <input type="text" autocomplete="off" class="input" id="albumName" placeholder="Введите название альбома">
+        </div>
+
+        <button class="button" id="processButton">
+            <div class="outline"></div>
+            <span>Обработать файлы</span>
+        </button>
+    </div>
+
+    <div class="modal-overlay" id="processingModal">
+        <div class="modal processing-modal">
+            <div class="modal-title">Обработка файлов</div>
+            <div class="modal-content">
+                <div class="spinner active">
+                    <div></div>
+                    <div></div>
+                    <div></div>
+                    <div></div>
+                    <div></div>
+                    <div></div>
+                    <div></div>
+                    <div></div>
+                    <div></div>
+                    <div></div>
+                </div>
+                <p>Идет обработка файлов...</p>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <p id="progressText">Обработано: 0/0</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="downloadModal">
+        <div class="modal">
+            <div class="modal-title">Обработка завершена</div>
+            <div class="modal-content">
+                <p>Файлы успешно обработаны и готовы к скачиванию</p>
+                <p><small>Файлы содержат новые метаданные и обложку</small></p>
+            </div>
+            <div id="downloadLinks"></div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
 </body>
 </html>
