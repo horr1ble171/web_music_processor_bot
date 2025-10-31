@@ -54,7 +54,18 @@ const audioFileList = document.getElementById('audioFileList');
 document.addEventListener('DOMContentLoaded', function() {
     initTelegramWebApp();
     setupEventListeners();
+    updateUIForPlatform();
 });
+
+function updateUIForPlatform() {
+    // Проверяем, является ли это Desktop версией Telegram
+    const isDesktop = !isTelegramWebApp || (window.innerWidth > 768);
+    
+    if (isDesktop) {
+        // Для десктопа скрываем кнопку отправки в бота
+        sendToBotButton.style.display = 'none';
+    }
+}
 
 function setupEventListeners() {
     audioFilesInput.addEventListener('change', handleAudioFilesSelection);
@@ -216,13 +227,21 @@ function updateProgress(current, total) {
 function showDownloadModal() {
     downloadLinks.innerHTML = '';
     
-    // Показываем кнопку отправки в бота только если открыто в Telegram Web App
-    if (isTelegramWebApp) {
+    // Определяем платформу и показываем/скрываем кнопки соответствующим образом
+    const isDesktop = !isTelegramWebApp || (window.innerWidth > 768);
+    
+    if (isTelegramWebApp && !isDesktop) {
+        // Мобильное устройство в Telegram - показываем кнопку отправки в бота
         sendToBotButton.style.display = 'block';
-        appState.currentProcessedFile = appState.processedFiles[0]; // Для простоты берем первый файл
+        sendToBotButton.textContent = 'Отправить в бота'; // Убрали смайлик
+        backButton.textContent = 'Назад';
     } else {
+        // Десктоп или браузер - скрываем кнопку отправки в бота
         sendToBotButton.style.display = 'none';
+        backButton.textContent = 'Закрыть';
     }
+
+    appState.currentProcessedFile = appState.processedFiles[0]; // Для простоты берем первый файл
 
     appState.processedFiles.forEach((file, index) => {
         const downloadLink = document.createElement('a');
@@ -266,8 +285,12 @@ async function sendFileToBot(file) {
         // Показываем статус загрузки
         const statusDiv = document.createElement('div');
         statusDiv.className = 'upload-status';
-        statusDiv.textContent = '📤 Отправка файла в бота...';
+        statusDiv.textContent = 'Отправка файла в бота...';
         downloadLinks.appendChild(statusDiv);
+
+        // Обновляем текст кнопки
+        sendToBotButton.textContent = 'Отправка...';
+        sendToBotButton.disabled = true;
 
         // Конвертируем файл в base64 для отправки
         const reader = new FileReader();
@@ -284,8 +307,11 @@ async function sendFileToBot(file) {
                 artist: artistNameInput.value
             }));
             
-            statusDiv.textContent = '✅ Файл отправлен в бота!';
+            statusDiv.textContent = 'Файл отправлен в бота! Закрываю приложение...';
             statusDiv.className = 'upload-status success';
+            
+            // Восстанавливаем кнопку
+            sendToBotButton.textContent = 'Отправлено!';
             
             // Закрываем мини-приложение через 2 секунды
             setTimeout(() => {
@@ -296,8 +322,10 @@ async function sendFileToBot(file) {
         };
         
         reader.onerror = function() {
-            statusDiv.textContent = '❌ Ошибка при отправке файла';
+            statusDiv.textContent = 'Ошибка при отправке файла';
             statusDiv.className = 'upload-status error';
+            sendToBotButton.textContent = 'Отправить в бота';
+            sendToBotButton.disabled = false;
         };
         
         reader.readAsDataURL(file);
@@ -305,6 +333,8 @@ async function sendFileToBot(file) {
     } catch (error) {
         console.error('Ошибка отправки в бота:', error);
         showAlert('Ошибка при отправке файла в бота: ' + error.message);
+        sendToBotButton.textContent = 'Отправить в бота';
+        sendToBotButton.disabled = false;
     }
 }
 
@@ -363,6 +393,11 @@ function resetAppState() {
 
     document.querySelector('#coverImage ~ .icon').style.display = 'flex';
     document.querySelector('#coverImage ~ .text').style.display = 'flex';
+
+    // Восстанавливаем кнопки
+    sendToBotButton.textContent = 'Отправить в бота';
+    sendToBotButton.disabled = false;
+    backButton.textContent = 'Назад';
 }
 
 function showAlert(message) {
