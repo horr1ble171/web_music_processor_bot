@@ -24,6 +24,7 @@ body {
     max-width: 800px;
     margin: 0 auto;
     position: relative;
+    min-height: 100vh;
 }
 
 .header {
@@ -397,6 +398,70 @@ body {
     display: none;
 }
 
+/* Новые стили для Telegram Web App */
+.modal-buttons {
+    display: flex;
+    gap: 12px;
+    margin-top: 20px;
+}
+
+.modal-buttons .button {
+    flex: 1;
+}
+
+.button.secondary {
+    background-color: var(--secondary-color);
+}
+
+.button.secondary:hover {
+    background-color: #555555;
+}
+
+.upload-status {
+    margin-top: 10px;
+    padding: 10px;
+    border-radius: 8px;
+    text-align: center;
+    font-size: 14px;
+}
+
+.upload-status.success {
+    background-color: #e8f5e8;
+    color: #2e7d32;
+    border: 1px solid #c8e6c9;
+}
+
+.upload-status.error {
+    background-color: #ffebee;
+    color: #c62828;
+    border: 1px solid #ffcdd2;
+}
+
+/* Адаптация для мобильных устройств */
+@media (max-width: 768px) {
+    body {
+        padding: 10px;
+    }
+    
+    .card {
+        padding: 16px;
+        margin-bottom: 10px;
+    }
+    
+    .header {
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+    }
+    
+    .header h1 {
+        font-size: 1.4rem;
+    }
+    
+    .modal-buttons {
+        flex-direction: column;
+    }
+}
+
 @media (max-width: 600px) {
     .header h1 {
         font-size: 1.5rem;
@@ -409,5 +474,10 @@ body {
     .modal {
         padding: 20px;
         width: 95%;
+    }
+    
+    .custum-file-upload {
+        min-height: 100px;
+        padding: 16px;
     }
 }
