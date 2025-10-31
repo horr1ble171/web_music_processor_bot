@@ -1,12 +1,13 @@
 :root {
-    --primary-color: #000000;
-    --secondary-color: #666666;
-    --background-color: #ffffff;
-    --card-color: #f5f5f5;
-    --text-color: #000000;
-    --border-color: #dddddd;
-    --success-color: #000000;
-    --error-color: #ff0000;
+    --primary-color: #8774e1;
+    --secondary-color: #a8a8a8;
+    --background-color: #1a1a1a;
+    --card-color: #2d2d2d;
+    --text-color: #ffffff;
+    --border-color: #404040;
+    --success-color: #4caf50;
+    --error-color: #f44336;
+    --telegram-color: #0088cc;
 }
 
 * {
@@ -37,7 +38,7 @@ body {
 .header h1 {
     font-size: 1.8rem;
     margin-bottom: 10px;
-    color: var(--primary-color);
+    color: var(--text-color);
 }
 
 .header p {
@@ -46,17 +47,19 @@ body {
 
 .card {
     background-color: var(--card-color);
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
     padding: 24px;
     margin-bottom: 20px;
     transition: all 0.3s ease;
+    border: 1px solid var(--border-color);
 }
 
 .card-title {
     font-size: 1.2rem;
     margin-bottom: 16px;
-    color: var(--primary-color);
+    color: var(--text-color);
+    font-weight: 600;
 }
 
 .input-group {
@@ -67,6 +70,7 @@ body {
     display: block;
     margin-bottom: 8px;
     font-weight: 500;
+    color: var(--text-color);
 }
 
 .input {
@@ -83,7 +87,11 @@ body {
 .input:focus {
     outline: none;
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 0 0 2px rgba(135, 116, 225, 0.2);
+}
+
+.input::placeholder {
+    color: var(--secondary-color);
 }
 
 .custum-file-upload {
@@ -103,7 +111,7 @@ body {
 
 .custum-file-upload:hover {
     border-color: var(--primary-color);
-    background-color: rgba(0, 0, 0, 0.05);
+    background-color: rgba(135, 116, 225, 0.1);
 }
 
 .icon {
@@ -166,22 +174,16 @@ body {
     cursor: pointer;
     overflow: hidden;
     transition: all 0.3s ease;
-    min-height: 44px;
 }
 
-.button:hover:not(:disabled) {
-    background-color: #333333;
+.button:hover {
+    background-color: #6a5bb3;
     transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
 }
 
-.button:active:not(:disabled) {
+.button:active {
     transform: translateY(0);
-}
-
-.button:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    transform: none !important;
 }
 
 .button .outline {
@@ -196,9 +198,21 @@ body {
     transition: all 0.3s ease;
 }
 
-.button:hover:not(:disabled) .outline {
+.button:hover .outline {
     opacity: 1;
     transform: scale(1.05);
+}
+
+.telegram-button {
+    background-color: var(--telegram-color);
+}
+
+.telegram-button:hover {
+    background-color: #0077b3;
+}
+
+.telegram-button .outline {
+    border-color: var(--telegram-color);
 }
 
 .spinner {
@@ -288,7 +302,7 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
+    background-color: rgba(0, 0, 0, 0.8);
     z-index: 1000;
     justify-content: center;
     align-items: center;
@@ -299,24 +313,27 @@ body {
 }
 
 .modal {
-    background-color: var(--background-color);
+    background-color: var(--card-color);
     border-radius: 12px;
     padding: 30px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
     max-width: 500px;
     width: 90%;
     text-align: center;
     z-index: 1001;
+    border: 1px solid var(--border-color);
 }
 
 .modal-title {
     font-size: 1.5rem;
     margin-bottom: 20px;
-    color: var(--primary-color);
+    color: var(--text-color);
+    font-weight: 600;
 }
 
 .modal-content {
     margin-bottom: 25px;
+    color: var(--secondary-color);
 }
 
 .download-button {
@@ -329,11 +346,14 @@ body {
     font-weight: 500;
     transition: all 0.3s ease;
     margin: 5px;
+    border: none;
+    cursor: pointer;
 }
 
 .download-button:hover {
-    background-color: #333333;
+    background-color: #6a5bb3;
     transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
 }
 
 .processing-modal .spinner {
@@ -346,8 +366,8 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
-    backdrop-filter: blur(5px);
-    -webkit-backdrop-filter: blur(5px);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     z-index: 999;
     display: none;
 }
@@ -369,6 +389,12 @@ body {
     border-radius: 8px;
     margin-bottom: 8px;
     background-color: var(--background-color);
+    transition: all 0.3s ease;
+}
+
+.file-item:hover {
+    border-color: var(--primary-color);
+    background-color: rgba(135, 116, 225, 0.1);
 }
 
 .file-name {
@@ -376,6 +402,13 @@ body {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    color: var(--text-color);
+}
+
+.file-size {
+    font-size: 12px;
+    color: var(--secondary-color);
+    margin-left: 8px;
 }
 
 .file-remove {
@@ -383,13 +416,20 @@ body {
     cursor: pointer;
     margin-left: 12px;
     font-weight: bold;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: background-color 0.3s ease;
+}
+
+.file-remove:hover {
+    background-color: rgba(244, 67, 54, 0.1);
 }
 
 .progress-bar {
     width: 100%;
-    height: 4px;
+    height: 6px;
     background-color: var(--border-color);
-    border-radius: 2px;
+    border-radius: 3px;
     margin-top: 10px;
     overflow: hidden;
 }
@@ -399,76 +439,17 @@ body {
     background-color: var(--primary-color);
     width: 0%;
     transition: width 0.3s ease;
+    border-radius: 3px;
 }
 
 .hidden {
     display: none;
 }
 
-.modal-buttons {
-    display: flex;
-    gap: 12px;
+.telegram-section {
     margin-top: 20px;
-    width: 100%;
-}
-
-.modal-buttons .button {
-    flex: 1;
-    min-height: 44px;
-}
-
-.button.secondary {
-    background-color: #666666;
-    color: white;
-}
-
-.button.secondary:hover:not(:disabled) {
-    background-color: #555555;
-}
-
-.upload-status {
-    margin-top: 10px;
-    padding: 10px;
-    border-radius: 8px;
-    text-align: center;
-    font-size: 14px;
-    width: 100%;
-}
-
-.upload-status.success {
-    background-color: #e8f5e8;
-    color: #2e7d32;
-    border: 1px solid #c8e6c9;
-}
-
-.upload-status.error {
-    background-color: #ffebee;
-    color: #c62828;
-    border: 1px solid #ffcdd2;
-}
-
-@media (max-width: 768px) {
-    body {
-        padding: 10px;
-    }
-    
-    .card {
-        padding: 16px;
-        margin-bottom: 10px;
-    }
-    
-    .header {
-        margin-bottom: 20px;
-        padding-bottom: 15px;
-    }
-    
-    .header h1 {
-        font-size: 1.4rem;
-    }
-    
-    .modal-buttons {
-        flex-direction: column;
-    }
+    padding-top: 20px;
+    border-top: 1px solid var(--border-color);
 }
 
 @media (max-width: 600px) {
@@ -483,5 +464,9 @@ body {
     .modal {
         padding: 20px;
         width: 95%;
+    }
+
+    body {
+        padding: 10px;
     }
 }
