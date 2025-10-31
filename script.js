@@ -36,7 +36,6 @@ const progressFill = document.getElementById('progressFill');
 const progressText = document.getElementById('progressText');
 const sendToBotButton = document.getElementById('sendToBotButton');
 const backButton = document.getElementById('backButton');
-const modalButtons = document.getElementById('modalButtons');
 
 // Кнопки
 const processButton = document.getElementById('processButton');
@@ -64,6 +63,7 @@ function updateUIForPlatform() {
     if (isDesktop) {
         // Для десктопа скрываем кнопку отправки в бота
         sendToBotButton.style.display = 'none';
+        backButton.textContent = 'Закрыть';
     }
 }
 
@@ -175,7 +175,7 @@ async function processAndDownload() {
 }
 
 async function processSingleFile(audioFile, coverImage, title, artist, album) {
-    return new Promise(async (resolve, reject) => {
+    return new Promise(async (resolve, reject) {
         try {
             const arrayBuffer = await audioFile.arrayBuffer();
             const writer = new ID3Writer(arrayBuffer);
@@ -233,7 +233,7 @@ function showDownloadModal() {
     if (isTelegramWebApp && !isDesktop) {
         // Мобильное устройство в Telegram - показываем кнопку отправки в бота
         sendToBotButton.style.display = 'block';
-        sendToBotButton.textContent = 'Отправить в бота'; // Убрали смайлик
+        sendToBotButton.textContent = 'Отправить в бота';
         backButton.textContent = 'Назад';
     } else {
         // Десктоп или браузер - скрываем кнопку отправки в бота
@@ -241,7 +241,7 @@ function showDownloadModal() {
         backButton.textContent = 'Закрыть';
     }
 
-    appState.currentProcessedFile = appState.processedFiles[0]; // Для простоты берем первый файл
+    appState.currentProcessedFile = appState.processedFiles[0];
 
     appState.processedFiles.forEach((file, index) => {
         const downloadLink = document.createElement('a');
