@@ -203,7 +203,7 @@ function showDownloadModal() {
 
         const fileInfo = document.createElement('div');
         fileInfo.style.fontSize = '12px';
-        fileInfo.style.color = '#bb86fc';
+        fileInfo.style.color = '#666';
         fileInfo.style.marginTop = '5px';
         fileInfo.textContent = `Размер: ${(file.size / 1024 / 1024).toFixed(2)} MB`;
 
@@ -241,7 +241,7 @@ function updateFileList() {
 
         const fileSize = document.createElement('div');
         fileSize.style.fontSize = '12px';
-        fileSize.style.color = '#bb86fc';
+        fileSize.style.color = '#666';
         fileSize.textContent = `(${(file.size / 1024 / 1024).toFixed(2)} MB)`;
 
         const fileRemove = document.createElement('div');
