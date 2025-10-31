@@ -405,7 +405,6 @@ body {
     display: none;
 }
 
-/* Стили для кнопок в модальном окне */
 .modal-buttons {
     display: flex;
     gap: 12px;
@@ -419,25 +418,14 @@ body {
 }
 
 .button.secondary {
-    background-color: #666666 !important;
-    color: white !important;
+    background-color: #666666;
+    color: white;
 }
 
 .button.secondary:hover:not(:disabled) {
-    background-color: #555555 !important;
+    background-color: #555555;
 }
 
-.button:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-}
-
-.button:disabled:hover {
-    transform: none;
-    background-color: var(--primary-color);
-}
-
-/* Индикатор загрузки файла в бота */
 .upload-status {
     margin-top: 10px;
     padding: 10px;
@@ -459,7 +447,6 @@ body {
     border: 1px solid #ffcdd2;
 }
 
-/* Адаптация для мобильных устройств */
 @media (max-width: 768px) {
     body {
         padding: 10px;
@@ -482,126 +469,6 @@ body {
     .modal-buttons {
         flex-direction: column;
     }
-    
-    .modal-buttons .button {
-        width: 100%;
-    }
-    
-    .custum-file-upload {
-        min-height: 100px;
-        padding: 16px;
-    }
-    
-    /* Для мобильных в Telegram показываем обе кнопки */
-    #sendToBotButton {
-        display: block !important;
-    }
-}
-
-/* Для десктопа скрываем кнопку отправки в бота */
-@media (min-width: 769px) {
-    #sendToBotButton {
-        display: none !important;
-    }
-    
-    .modal-buttons {
-        flex-direction: row;
-    }
-}
-
-/* Улучшения для кнопок */
-.button {
-    transition: all 0.3s ease;
-}
-
-.button:hover:not(:disabled) {
-    transform: translateY(-2px);
-}
-
-/* Дополнительные стили для лучшего UX */
-.input::placeholder {
-    color: #999;
-}
-
-.custum-file-upload:has(.preview-image[style*="display: block"]) {
-    padding: 16px;
-}
-
-.custum-file-upload:has(.preview-image[style*="display: block"]) .icon,
-.custum-file-upload:has(.preview-image[style*="display: block"]) .text {
-    display: none;
-}
-
-/* Анимации для плавного появления */
-.card, .modal {
-    animation: fadeInUp 0.5s ease-out;
-}
-
-@keyframes fadeInUp {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-/* Стили для скроллбара (если нужно) */
-::-webkit-scrollbar {
-    width: 6px;
-}
-
-::-webkit-scrollbar-track {
-    background: #f1f1f1;
-    border-radius: 3px;
-}
-
-::-webkit-scrollbar-thumb {
-    background: #c1c1c1;
-    border-radius: 3px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background: #a8a8a8;
-}
-
-/* Улучшения для доступности */
-.button:focus {
-    outline: 2px solid var(--primary-color);
-    outline-offset: 2px;
-}
-
-.input:focus {
-    outline: 2px solid var(--primary-color);
-    outline-offset: -2px;
-}
-
-/* Стили для состояния загрузки */
-.loading {
-    pointer-events: none;
-    opacity: 0.7;
-}
-
-/* Стили для успешных операций */
-.success-message {
-    background-color: #e8f5e8;
-    color: #2e7d32;
-    padding: 12px;
-    border-radius: 8px;
-    margin: 10px 0;
-    border: 1px solid #c8e6c9;
-}
-
-/* Стили для ошибок */
-.error-message {
-    background-color: #ffebee;
-    color: #c62828;
-    padding: 12px;
-    border-radius: 8px;
-    margin: 10px 0;
-    border: 1px solid #ffcdd2;
 }
 
 @media (max-width: 600px) {
@@ -616,55 +483,5 @@ body {
     .modal {
         padding: 20px;
         width: 95%;
-    }
-    
-    .custum-file-upload {
-        min-height: 100px;
-    }
-    
-    .button {
-        padding: 12px 20px;
-        font-size: 0.9rem;
-    }
-}
-
-/* Специфические стили для Telegram Web App */
-.telegram-webapp .header {
-    padding-top: 10px;
-}
-
-.telegram-webapp body {
-    background-color: var(--background-color);
-}
-
-/* Поддержка темной темы Telegram */
-@media (prefers-color-scheme: dark) {
-    :root {
-        --primary-color: #ffffff;
-        --secondary-color: #aaaaaa;
-        --background-color: #1c1c1c;
-        --card-color: #2d2d2d;
-        --text-color: #ffffff;
-        --border-color: #444444;
-    }
-    
-    .input {
-        background-color: #2d2d2d;
-        color: #ffffff;
-        border-color: #444444;
-    }
-    
-    .custum-file-upload {
-        background-color: #2d2d2d;
-        border-color: #444444;
-    }
-    
-    .custum-file-upload:hover {
-        background-color: rgba(255, 255, 255, 0.05);
-    }
-    
-    .file-item {
-        background-color: #2d2d2d;
-        border-color: #444444;
     }
 }
