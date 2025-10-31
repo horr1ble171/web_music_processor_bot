@@ -9,22 +9,6 @@
     --error-color: #ff0000;
 }
 
-/* Полноэкранные стили для мини-приложения */
-body.mini-app-mode {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    margin: 0;
-    padding: 20px;
-    overflow-y: auto;
-    background-color: var(--background-color);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-
 * {
     margin: 0;
     padding: 0;
@@ -36,12 +20,29 @@ body {
     background-color: var(--background-color);
     color: var(--text-color);
     line-height: 1.6;
-    padding: 20px;
-    max-width: 800px;
-    margin: 0 auto;
-    position: relative;
     min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+}
+
+/* Стили для мини-приложения Telegram */
+body.mini-app-mode {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+    background-color: var(--background-color);
+}
+
+.main-container {
     width: 100%;
+    max-width: 800px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
 .header {
@@ -453,7 +454,6 @@ body {
     display: none;
 }
 
-/* Стили для кнопки закрытия в модальном окне */
 .modal-close-button {
     background-color: var(--secondary-color);
     color: white;
@@ -469,15 +469,6 @@ body {
 .modal-close-button:hover {
     background-color: #555555;
     transform: translateY(-2px);
-}
-
-/* Контейнер для центрирования контента */
-.content-container {
-    width: 100%;
-    max-width: 800px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
 }
 
 @media (max-width: 600px) {
