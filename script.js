@@ -1,8 +1,30 @@
+// Telegram Web App инициализация
+let tg = null;
+let isTelegramWebApp = false;
+
+// Инициализация Telegram Web App
+function initTelegramWebApp() {
+    if (window.Telegram && window.Telegram.WebApp) {
+        tg = window.Telegram.WebApp;
+        isTelegramWebApp = true;
+        
+        // Развернуть на весь экран
+        tg.expand();
+        
+        // Изменить цвет фона
+        tg.setBackgroundColor('#ffffff');
+        tg.setHeaderColor('#000000');
+        
+        console.log('Telegram Web App инициализирован');
+    }
+}
+
 // Состояние приложения
 const appState = {
     audioFiles: [],
     coverImage: null,
-    processedFiles: []
+    processedFiles: [],
+    currentProcessedFile: null
 };
 
 // Элементы DOM
@@ -12,6 +34,9 @@ const downloadModal = document.getElementById('downloadModal');
 const downloadLinks = document.getElementById('downloadLinks');
 const progressFill = document.getElementById('progressFill');
 const progressText = document.getElementById('progressText');
+const sendToBotButton = document.getElementById('sendToBotButton');
+const backButton = document.getElementById('backButton');
+const modalButtons = document.getElementById('modalButtons');
 
 // Кнопки
 const processButton = document.getElementById('processButton');
@@ -25,12 +50,20 @@ const artistNameInput = document.getElementById('artistName');
 const albumNameInput = document.getElementById('albumName');
 const audioFileList = document.getElementById('audioFileList');
 
-// Обработчики событий
-audioFilesInput.addEventListener('change', handleAudioFilesSelection);
-coverImageInput.addEventListener('change', handleCoverImageSelection);
-processButton.addEventListener('click', handleProcessFiles);
+// Инициализация при загрузке
+document.addEventListener('DOMContentLoaded', function() {
+    initTelegramWebApp();
+    setupEventListeners();
+});
 
-// Функции обработки
+function setupEventListeners() {
+    audioFilesInput.addEventListener('change', handleAudioFilesSelection);
+    coverImageInput.addEventListener('change', handleCoverImageSelection);
+    processButton.addEventListener('click', processAndDownload);
+    sendToBotButton.addEventListener('click', handleSendToBot);
+    backButton.addEventListener('click', handleBackButton);
+}
+
 function handleAudioFilesSelection(event) {
     const files = Array.from(event.target.files);
 
@@ -40,7 +73,7 @@ function handleAudioFilesSelection(event) {
     });
 
     if (validFiles.length === 0) {
-        alert('Пожалуйста, выберите MP3 файлы');
+        showAlert('Пожалуйста, выберите MP3 файлы');
         return;
     }
 
@@ -56,7 +89,7 @@ function handleCoverImageSelection(event) {
     const extension = '.' + file.name.split('.').pop().toLowerCase();
 
     if (!supportedFormats.includes(extension)) {
-        alert('Пожалуйста, выберите поддерживаемое изображение (JPG, PNG)');
+        showAlert('Пожалуйста, выберите поддерживаемое изображение (JPG, PNG)');
         return;
     }
 
@@ -73,189 +106,212 @@ function handleCoverImageSelection(event) {
     reader.readAsDataURL(file);
 }
 
-async function handleProcessFiles() {
+async function processAndDownload() {
     if (appState.audioFiles.length === 0) {
-        alert('Пожалуйста, загрузите MP3 файлы');
+        showAlert('Пожалуйста, загрузите MP3 файлы');
         return;
     }
 
     if (!appState.coverImage) {
-        alert('Пожалуйста, загрузите обложку');
+        showAlert('Пожалуйста, загрузите обложку');
         return;
     }
 
     if (!trackTitleInput.value.trim()) {
-        alert('Пожалуйста, введите название трека');
+        showAlert('Пожалуйста, введите название трека');
         return;
     }
 
     if (!artistNameInput.value.trim()) {
-        alert('Пожалуйста, введите имя исполнителя');
+        showAlert('Пожалуйста, введите имя исполнителя');
         return;
     }
 
     if (!albumNameInput.value.trim()) {
-        alert('Пожалуйста, введите название альбома');
+        showAlert('Пожалуйста, введите название альбома');
         return;
     }
 
-    blurBackground.classList.add('active');
-    processingModal.classList.add('active');
+    showProcessingModal();
 
     try {
         appState.processedFiles = [];
         const totalFiles = appState.audioFiles.length;
 
         for (let i = 0; i < totalFiles; i++) {
-            // Обновляем прогресс
-            const progress = ((i + 1) / totalFiles) * 100;
-            progressFill.style.width = `${progress}%`;
-            progressText.textContent = `Обработано: ${i + 1}/${totalFiles}`;
+            updateProgress(i + 1, totalFiles);
 
-            const processedFile = await updateMP3Metadata(
+            const processedFile = await processSingleFile(
                 appState.audioFiles[i],
                 appState.coverImage,
                 trackTitleInput.value,
                 artistNameInput.value,
-                albumNameInput.value,
-                i
+                albumNameInput.value
             );
             appState.processedFiles.push(processedFile);
 
-            // Небольшая задержка для плавности
-            await new Promise(resolve => setTimeout(resolve, 500));
+            await new Promise(resolve => setTimeout(resolve, 300));
         }
 
-        processingModal.classList.remove('active');
+        hideProcessingModal();
         showDownloadModal();
 
     } catch (error) {
         console.error('Ошибка обработки:', error);
-        alert('Произошла ошибка при обработке файлов: ' + error.message);
-        processingModal.classList.remove('active');
-        blurBackground.classList.remove('active');
+        showAlert('Произошла ошибка при обработке файлов: ' + error.message);
+        hideProcessingModal();
     }
 }
 
-function updateMP3Metadata(audioFile, coverImage, title, artist, album, index) {
-    return new Promise((resolve, reject) => {
-        // Сначала читаем оригинальный файл
-        const reader = new FileReader();
+async function processSingleFile(audioFile, coverImage, title, artist, album) {
+    return new Promise(async (resolve, reject) => {
+        try {
+            const arrayBuffer = await audioFile.arrayBuffer();
+            const writer = new ID3Writer(arrayBuffer);
 
-        reader.onload = function(e) {
-            const arrayBuffer = e.target.result;
+            // Добавляем обложку
+            if (coverImage) {
+                const coverArrayBuffer = await coverImage.arrayBuffer();
+                writer.setFrame('APIC', {
+                    type: 3,
+                    data: new Uint8Array(coverArrayBuffer),
+                    description: 'Cover'
+                });
+            }
 
-            // Используем jsmediatags для чтения и модификации метаданных
-            jsmediatags.read(arrayBuffer, {
-                onSuccess: function(tag) {
-                    try {
-                        // Создаем новые теги
-                        const newTags = {
-                            title: title,
-                            artist: artist,
-                            album: album
-                        };
+            // Добавляем текстовые метаданные
+            if (title) writer.setFrame('TIT2', title);
+            if (artist) writer.setFrame('TPE1', [artist]);
+            if (album) writer.setFrame('TALB', album);
 
-                        // Читаем обложку
-                        const coverReader = new FileReader();
-                        coverReader.onload = function(coverEvent) {
-                            try {
-                                // Создаем новый файл с обновленными метаданными
-                                const updatedBuffer = updateID3Tags(
-                                    arrayBuffer,
-                                    newTags,
-                                    coverEvent.target.result,
-                                    coverImage.type
-                                );
+            writer.addTag();
 
-                                const newFileName = `${title} - ${artist}.mp3`;
-                                const newFile = new File([updatedBuffer], newFileName, {
-                                    type: 'audio/mpeg'
-                                });
+            const blob = writer.getBlob();
+            const fileName = `${title || 'track'} - ${artist || 'artist'}.mp3`;
+            const newFile = new File([blob], fileName, { type: 'audio/mpeg' });
 
-                                resolve(newFile);
-
-                            } catch (error) {
-                                reject(error);
-                            }
-                        };
-
-                        coverReader.onerror = function() {
-                            reject(new Error('Ошибка чтения обложки'));
-                        };
-
-                        coverReader.readAsArrayBuffer(coverImage);
-
-                    } catch (error) {
-                        reject(error);
-                    }
-                },
-                onError: function(error) {
-                    reject(error);
-                }
-            });
-        };
-
-        reader.onerror = function() {
-            reject(new Error('Ошибка чтения аудиофайла'));
-        };
-
-        reader.readAsArrayBuffer(audioFile);
+            resolve(newFile);
+        } catch (error) {
+            reject(error);
+        }
     });
 }
 
-function updateID3Tags(arrayBuffer, tags, coverArrayBuffer, coverType) {
-    // Создаем простую реализацию обновления ID3 тегов
-    // В реальном приложении здесь была бы сложная логика работы с ID3
+function showProcessingModal() {
+    blurBackground.classList.add('active');
+    processingModal.classList.add('active');
+}
 
-    // Для демонстрации просто возвращаем оригинальный буфер
-    // В реальном приложении нужно использовать библиотеку для записи ID3
+function hideProcessingModal() {
+    processingModal.classList.remove('active');
+    blurBackground.classList.remove('active');
+}
 
-    // Временное решение: создаем новый файл с тем же содержимым
-    // но с новым именем, чтобы показать что обработка прошла
-    return arrayBuffer;
+function updateProgress(current, total) {
+    const progress = ((current) / total) * 100;
+    progressFill.style.width = `${progress}%`;
+    progressText.textContent = `Обработано: ${current}/${total}`;
 }
 
 function showDownloadModal() {
     downloadLinks.innerHTML = '';
+    
+    // Показываем кнопку отправки в бота только если открыто в Telegram Web App
+    if (isTelegramWebApp) {
+        sendToBotButton.style.display = 'block';
+        appState.currentProcessedFile = appState.processedFiles[0]; // Для простоты берем первый файл
+    } else {
+        sendToBotButton.style.display = 'none';
+    }
 
     appState.processedFiles.forEach((file, index) => {
         const downloadLink = document.createElement('a');
         downloadLink.href = URL.createObjectURL(file);
         downloadLink.download = file.name;
         downloadLink.className = 'download-button';
-        downloadLink.textContent = `Скачать ${file.name}`;
+        downloadLink.textContent = `Скачать "${file.name}"`;
         downloadLink.style.display = 'block';
+        downloadLink.style.marginBottom = '10px';
 
-        // Добавляем информацию о файле
         const fileInfo = document.createElement('div');
         fileInfo.style.fontSize = '12px';
         fileInfo.style.color = '#666';
-        fileInfo.style.marginTop = '5px';
+        fileInfo.style.marginBottom = '15px';
         fileInfo.textContent = `Размер: ${(file.size / 1024 / 1024).toFixed(2)} MB`;
 
-        const container = document.createElement('div');
-        container.style.marginBottom = '15px';
-        container.appendChild(downloadLink);
-        container.appendChild(fileInfo);
-
-        downloadLinks.appendChild(container);
+        downloadLinks.appendChild(downloadLink);
+        downloadLinks.appendChild(fileInfo);
     });
 
-    const closeButton = document.createElement('button');
-    closeButton.className = 'button';
-    closeButton.textContent = 'Закрыть';
-    closeButton.style.marginTop = '15px';
-    closeButton.style.width = 'auto';
-    closeButton.style.padding = '10px 20px';
-    closeButton.addEventListener('click', function() {
-        downloadModal.classList.remove('active');
-        blurBackground.classList.remove('active');
-        resetAppState();
-    });
-
-    downloadLinks.appendChild(closeButton);
     downloadModal.classList.add('active');
+    blurBackground.classList.add('active');
+}
+
+function handleSendToBot() {
+    if (!appState.currentProcessedFile) {
+        showAlert('Нет обработанного файла для отправки');
+        return;
+    }
+
+    if (!isTelegramWebApp || !tg) {
+        showAlert('Функция отправки в бота доступна только в Telegram');
+        return;
+    }
+
+    sendFileToBot(appState.currentProcessedFile);
+}
+
+async function sendFileToBot(file) {
+    try {
+        // Показываем статус загрузки
+        const statusDiv = document.createElement('div');
+        statusDiv.className = 'upload-status';
+        statusDiv.textContent = '📤 Отправка файла в бота...';
+        downloadLinks.appendChild(statusDiv);
+
+        // Конвертируем файл в base64 для отправки
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const base64Data = e.target.result.split(',')[1];
+            
+            // Отправляем данные в бота через Telegram Web App
+            tg.sendData(JSON.stringify({
+                action: 'send_processed_audio',
+                filename: file.name,
+                data: base64Data,
+                mime_type: 'audio/mpeg',
+                title: trackTitleInput.value,
+                artist: artistNameInput.value
+            }));
+            
+            statusDiv.textContent = '✅ Файл отправлен в бота!';
+            statusDiv.className = 'upload-status success';
+            
+            // Закрываем мини-приложение через 2 секунды
+            setTimeout(() => {
+                if (tg && tg.close) {
+                    tg.close();
+                }
+            }, 2000);
+        };
+        
+        reader.onerror = function() {
+            statusDiv.textContent = '❌ Ошибка при отправке файла';
+            statusDiv.className = 'upload-status error';
+        };
+        
+        reader.readAsDataURL(file);
+        
+    } catch (error) {
+        console.error('Ошибка отправки в бота:', error);
+        showAlert('Ошибка при отправке файла в бота: ' + error.message);
+    }
+}
+
+function handleBackButton() {
+    downloadModal.classList.remove('active');
+    blurBackground.classList.remove('active');
+    resetAppState();
 }
 
 function updateFileList() {
@@ -293,8 +349,8 @@ function resetAppState() {
     appState.audioFiles = [];
     appState.coverImage = null;
     appState.processedFiles = [];
+    appState.currentProcessedFile = null;
 
-    processButton.classList.remove('sent');
     audioFilesInput.value = '';
     coverImageInput.value = '';
     trackTitleInput.value = '';
@@ -309,100 +365,6 @@ function resetAppState() {
     document.querySelector('#coverImage ~ .text').style.display = 'flex';
 }
 
-// Простая функция для демонстрации - в реальном приложении нужна полноценная библиотека
-function simpleMP3Processor(audioFile, title, artist, album) {
-    return new Promise((resolve) => {
-        // Для демонстрации просто создаем копию файла с новым именем
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const newFileName = `${title} - ${artist}.mp3`;
-            const newFile = new File([e.target.result], newFileName, {
-                type: 'audio/mpeg'
-            });
-            resolve(newFile);
-        };
-        reader.readAsArrayBuffer(audioFile);
-    });
+function showAlert(message) {
+    alert(message);
 }
-
-// Функции для работы с ID3 тегами (используем browser-id3-writer)
-async function processAndDownload() {
-    if (!appState.audioFiles.length) {
-        alert('Пожалуйста, загрузите MP3 файлы');
-        return;
-    }
-
-    const title = trackTitleInput.value || '';
-    const artist = artistNameInput.value || '';
-
-    try {
-        blurBackground.classList.add('active');
-        processingModal.classList.add('active');
-
-        appState.processedFiles = [];
-        const totalFiles = appState.audioFiles.length;
-
-        for (let i = 0; i < totalFiles; i++) {
-            const progress = ((i + 1) / totalFiles) * 100;
-            progressFill.style.width = `${progress}%`;
-            progressText.textContent = `Обработано: ${i + 1}/${totalFiles}`;
-
-            const processedFile = await processSingleFile(
-                appState.audioFiles[i],
-                appState.coverImage,
-                title,
-                artist,
-                albumNameInput.value || ''
-            );
-            appState.processedFiles.push(processedFile);
-
-            await new Promise(resolve => setTimeout(resolve, 500));
-        }
-
-        processingModal.classList.remove('active');
-        showDownloadModal();
-
-    } catch (error) {
-        console.error('Ошибка обработки:', error);
-        alert('Произошла ошибка при обработке файлов: ' + error.message);
-        processingModal.classList.remove('active');
-        blurBackground.classList.remove('active');
-    }
-}
-
-async function processSingleFile(audioFile, coverImage, title, artist, album) {
-    return new Promise(async (resolve, reject) => {
-        try {
-            const arrayBuffer = await audioFile.arrayBuffer();
-            const writer = new ID3Writer(arrayBuffer);
-
-            // Добавляем обложку если есть
-            if (coverImage) {
-                const coverArrayBuffer = await coverImage.arrayBuffer();
-                writer.setFrame('APIC', {
-                    type: 3,
-                    data: new Uint8Array(coverArrayBuffer),
-                    description: 'Cover'
-                });
-            }
-
-            // Добавляем текстовые метаданные
-            if (title) writer.setFrame('TIT2', title);
-            if (artist) writer.setFrame('TPE1', [artist]);
-            if (album) writer.setFrame('TALB', album);
-
-            writer.addTag();
-
-            const blob = writer.getBlob();
-            const fileName = `${title || 'track'} - ${artist || 'artist'}.mp3`;
-            const newFile = new File([blob], fileName, { type: 'audio/mpeg' });
-
-            resolve(newFile);
-        } catch (error) {
-            reject(error);
-        }
-    });
-}
-
-// Обновляем обработчик кнопки
-processButton.addEventListener('click', processAndDownload);
