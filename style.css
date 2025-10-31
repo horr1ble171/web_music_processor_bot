@@ -454,8 +454,9 @@ body.mini-app-mode {
     display: none;
 }
 
+/* ИСПРАВЛЕННЫЕ СТИЛИ ДЛЯ КНОПКИ ЗАКРЫТЬ */
 .modal-close-button {
-    background-color: var(--secondary-color);
+    background-color: var(--primary-color); /* Теперь черный цвет как у других кнопок */
     color: white;
     border: none;
     padding: 12px 24px;
@@ -467,7 +468,7 @@ body.mini-app-mode {
 }
 
 .modal-close-button:hover {
-    background-color: #555555;
+    background-color: #333333;
     transform: translateY(-2px);
 }
 
@@ -499,5 +500,13 @@ body.mini-app-mode {
     
     .button {
         padding: 14px 20px;
+    }
+    
+    .download-button {
+        padding: 10px 20px;
+    }
+    
+    .modal-close-button {
+        padding: 10px 20px;
     }
 }
