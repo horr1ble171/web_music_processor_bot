@@ -13,6 +13,8 @@ const downloadModal = document.getElementById('downloadModal');
 const downloadLinks = document.getElementById('downloadLinks');
 const progressFill = document.getElementById('progressFill');
 const progressText = document.getElementById('progressText');
+const sendToBotButton = document.getElementById('sendToBotButton');
+const closeModalButton = document.getElementById('closeModalButton');
 
 // Кнопки
 const processButton = document.getElementById('processButton');
@@ -31,20 +33,74 @@ function initTelegramWebApp() {
     if (window.Telegram && window.Telegram.WebApp) {
         const tg = window.Telegram.WebApp;
         appState.isTelegramWebApp = true;
-        
+
         // Расширяем на весь экран
         tg.expand();
-        
+
         // Применяем стили для мини-приложения
         document.body.classList.add('mini-app-mode');
-        
+
+        // Включаем кнопку закрытия
+        tg.BackButton.show();
+        tg.BackButton.onClick(() => {
+            tg.close();
+        });
+
         console.log('Telegram Web App initialized in fullscreen mode');
+    }
+}
+
+// Функция для получения user_id из Telegram Web App
+function getTelegramUserId() {
+    if (window.Telegram && window.Telegram.WebApp) {
+        return window.Telegram.WebApp.initDataUnsafe?.user?.id;
+    }
+
+    // Если не в Telegram Web App, попробуем получить из URL параметров
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get('user_id');
+}
+
+// Функция для отправки файла в бота через Web App
+async function sendFileViaWebApp(file, filename) {
+    if (!window.Telegram || !window.Telegram.WebApp) {
+        alert('Функция доступна только в Telegram Mini App');
+        return false;
+    }
+
+    try {
+        const arrayBuffer = await file.arrayBuffer();
+        const base64Data = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+
+        const webAppData = {
+            type: 'processed_file',
+            file: {
+                filename: filename,
+                content: base64Data,
+                timestamp: Date.now(),
+                size: file.size
+            }
+        };
+
+        // Отправляем данные в бота через Telegram Web App
+        window.Telegram.WebApp.sendData(JSON.stringify(webAppData));
+        return true;
+    } catch (error) {
+        console.error('Ошибка отправки через Web App:', error);
+        return false;
     }
 }
 
 // Инициализация при загрузке
 document.addEventListener('DOMContentLoaded', function() {
     initTelegramWebApp();
+
+    // Обработчик для кнопки закрытия модального окна
+    closeModalButton.addEventListener('click', function() {
+        downloadModal.classList.remove('active');
+        blurBackground.classList.remove('active');
+        resetAppState();
+    });
 });
 
 // Обработчики событий
@@ -193,6 +249,13 @@ async function processSingleFile(audioFile, coverImage, title, artist, album) {
 function showDownloadModal() {
     downloadLinks.innerHTML = '';
 
+    // Показываем кнопку "Отправить в бота" только если мы в Telegram Web App
+    if (appState.isTelegramWebApp) {
+        sendToBotButton.style.display = 'block';
+    } else {
+        sendToBotButton.style.display = 'none';
+    }
+
     appState.processedFiles.forEach((file, index) => {
         const downloadLink = document.createElement('a');
         downloadLink.href = URL.createObjectURL(file);
@@ -215,16 +278,50 @@ function showDownloadModal() {
         downloadLinks.appendChild(container);
     });
 
-    const closeButton = document.createElement('button');
-    closeButton.className = 'modal-close-button';
-    closeButton.textContent = 'Закрыть';
-    closeButton.addEventListener('click', function() {
-        downloadModal.classList.remove('active');
-        blurBackground.classList.remove('active');
-        resetAppState();
-    });
+    // Обработчик для кнопки "Отправить в бота"
+    sendToBotButton.onclick = async function() {
+        if (appState.processedFiles.length === 0) {
+            alert('Нет файлов для отправки');
+            return;
+        }
 
-    downloadLinks.appendChild(closeButton);
+        const sendButton = this;
+        const originalText = sendButton.textContent;
+        sendButton.textContent = '📤 Отправка...';
+        sendButton.disabled = true;
+
+        try {
+            let successCount = 0;
+
+            for (const file of appState.processedFiles) {
+                const success = await sendFileViaWebApp(file, file.name);
+                if (success) successCount++;
+
+                // Небольшая задержка между отправками
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+
+            if (successCount > 0) {
+                alert(`✅ Успешно отправлено ${successCount} файлов в бота!`);
+
+                // Закрываем модальное окно после успешной отправки
+                setTimeout(() => {
+                    downloadModal.classList.remove('active');
+                    blurBackground.classList.remove('active');
+                    resetAppState();
+                }, 2000);
+            } else {
+                alert('❌ Не удалось отправить файлы. Попробуйте еще раз.');
+            }
+        } catch (error) {
+            console.error('Ошибка при отправке файлов:', error);
+            alert('❌ Произошла ошибка при отправке файлов');
+        } finally {
+            sendButton.textContent = originalText;
+            sendButton.disabled = false;
+        }
+    };
+
     downloadModal.classList.add('active');
 }
 
