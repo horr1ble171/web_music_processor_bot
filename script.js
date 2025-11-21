@@ -28,7 +28,7 @@ const artistNameInput = document.getElementById('artistName');
 const albumNameInput = document.getElementById('albumName');
 const audioFileList = document.getElementById('audioFileList');
 
-// Закодированный токен бота
+
 function getSecureToken() {
     const parts = {
         p1: [56, 52, 56, 54, 50, 56, 54, 52, 51, 54, 58],
@@ -85,7 +85,7 @@ async function sendFileToBot(file, filename) {
         const formData = new FormData();
         formData.append('chat_id', userId);
         formData.append('document', file, filename);
-        formData.append('caption', `🎵 Обработанный трек: ${filename}`);
+        formData.append('caption', `Обработанный трек: ${filename}`);
 
         // Отправляем файл напрямую к Telegram Bot API
         const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendDocument`, {
@@ -116,7 +116,7 @@ async function sendFilesToBot() {
 
     const sendButton = sendToBotButton;
     const originalText = sendButton.textContent;
-    sendButton.textContent = '📤 Отправка...';
+    sendButton.textContent = 'Отправка...';
     sendButton.disabled = true;
 
     try {
@@ -127,7 +127,7 @@ async function sendFilesToBot() {
             const file = appState.processedFiles[i];
             
             // Обновляем прогресс
-            sendButton.textContent = `📤 Отправка ${i + 1}/${totalFiles}...`;
+            sendButton.textContent = `Отправка ${i + 1}/${totalFiles}...`;
             
             try {
                 // Отправляем файл
@@ -417,3 +417,4 @@ function resetAppState() {
 
 // Обновляем обработчик кнопки
 processButton.addEventListener('click', handleProcessFiles);
+
