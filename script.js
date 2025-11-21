@@ -72,7 +72,7 @@ function getTelegramUserId() {
     return null;
 }
 
-// Функция для отправки файла через Telegram Bot API
+// Функция для отправки файла как аудио с обложкой
 async function sendFileToBot(file, filename) {
     const userId = getTelegramUserId();
     
@@ -81,14 +81,16 @@ async function sendFileToBot(file, filename) {
     }
 
     try {
-        // Создаем FormData для отправки файла
+        // Создаем FormData для отправки аудио
         const formData = new FormData();
         formData.append('chat_id', userId);
-        formData.append('document', file, filename);
-        formData.append('caption', `Обработанный трек: ${filename}`);
+        formData.append('audio', file, filename);
+        formData.append('title', trackTitleInput.value);
+        formData.append('performer', artistNameInput.value);
+        formData.append('caption', `🎵 ${trackTitleInput.value} - ${artistNameInput.value}`);
 
-        // Отправляем файл напрямую к Telegram Bot API
-        const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendDocument`, {
+        // Отправляем файл как аудио к Telegram Bot API
+        const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendAudio`, {
             method: 'POST',
             body: formData
         });
@@ -303,11 +305,13 @@ async function processSingleFile(audioFile, coverImage, title, artist, album) {
 
             // Добавляем обложку если есть
             if (coverImage) {
+                console.log('Добавляем обложку в файл');
                 const coverArrayBuffer = await coverImage.arrayBuffer();
                 writer.setFrame('APIC', {
-                    type: 3,
+                    type: 3, // 3 = cover image
                     data: new Uint8Array(coverArrayBuffer),
-                    description: 'Cover'
+                    description: 'Cover',
+                    useUnicodeEncoding: false
                 });
             }
 
@@ -322,6 +326,7 @@ async function processSingleFile(audioFile, coverImage, title, artist, album) {
             const fileName = `${title || 'track'} - ${artist || 'artist'}.mp3`;
             const newFile = new File([blob], fileName, { type: 'audio/mpeg' });
 
+            console.log('Файл обработан с обложкой:', fileName);
             resolve(newFile);
         } catch (error) {
             reject(error);
@@ -417,4 +422,3 @@ function resetAppState() {
 
 // Обновляем обработчик кнопки
 processButton.addEventListener('click', handleProcessFiles);
-
