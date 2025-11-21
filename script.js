@@ -13,8 +13,6 @@ const downloadModal = document.getElementById('downloadModal');
 const downloadLinks = document.getElementById('downloadLinks');
 const progressFill = document.getElementById('progressFill');
 const progressText = document.getElementById('progressText');
-const sendToBotButton = document.getElementById('sendToBotButton');
-const closeModalButton = document.getElementById('closeModalButton');
 
 // Кнопки
 const processButton = document.getElementById('processButton');
@@ -28,164 +26,25 @@ const artistNameInput = document.getElementById('artistName');
 const albumNameInput = document.getElementById('albumName');
 const audioFileList = document.getElementById('audioFileList');
 
-
-function getSecureToken() {
-    const parts = {
-        p1: [56, 52, 56, 54, 50, 56, 54, 52, 51, 54, 58],
-        p2: "QUFGTHlLaWxVcDF5TlF1",
-        p3: "c1JkMnFyemVSMklNam1faV",
-        p4: [84, 108, 52, 52]
-    };
-    
-    return String.fromCharCode(...parts.p1) + atob(parts.p2) + atob(parts.p3) + String.fromCharCode(...parts.p4);
-}
-
-const BOT_TOKEN = getSecureToken();
-
 // Инициализация Telegram Web App
 function initTelegramWebApp() {
     if (window.Telegram && window.Telegram.WebApp) {
         const tg = window.Telegram.WebApp;
         appState.isTelegramWebApp = true;
-        
+
         // Расширяем на весь экран
         tg.expand();
-        
+
         // Применяем стили для мини-приложения
         document.body.classList.add('mini-app-mode');
-        
-        // Включаем кнопку закрытия
-        tg.BackButton.show();
-        tg.BackButton.onClick(() => {
-            tg.close();
-        });
-        
+
         console.log('Telegram Web App initialized in fullscreen mode');
-    }
-}
-
-// Получаем user_id из Telegram Web App
-function getTelegramUserId() {
-    if (window.Telegram && window.Telegram.WebApp) {
-        return window.Telegram.WebApp.initDataUnsafe?.user?.id;
-    }
-    return null;
-}
-
-// Функция для отправки файла как аудио с обложкой
-async function sendFileToBot(file, filename) {
-    const userId = getTelegramUserId();
-    
-    if (!userId) {
-        throw new Error('Не удалось определить пользователя');
-    }
-
-    try {
-        // Создаем FormData для отправки аудио
-        const formData = new FormData();
-        formData.append('chat_id', userId);
-        formData.append('audio', file, filename);
-        formData.append('title', trackTitleInput.value);
-        formData.append('performer', artistNameInput.value);
-        formData.append('caption', `🎵 ${trackTitleInput.value} - ${artistNameInput.value}`);
-
-        // Отправляем файл как аудио к Telegram Bot API
-        const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendAudio`, {
-            method: 'POST',
-            body: formData
-        });
-
-        const result = await response.json();
-        
-        if (result.ok) {
-            return true;
-        } else {
-            console.error('Ошибка Telegram API:', result);
-            throw new Error(result.description || 'Ошибка отправки файла');
-        }
-    } catch (error) {
-        console.error('Ошибка при отправке файла:', error);
-        throw error;
-    }
-}
-
-// Функция для отправки всех файлов в бота
-async function sendFilesToBot() {
-    if (appState.processedFiles.length === 0) {
-        alert('Нет файлов для отправки');
-        return;
-    }
-
-    const sendButton = sendToBotButton;
-    const originalText = sendButton.textContent;
-    sendButton.textContent = 'Отправка...';
-    sendButton.disabled = true;
-
-    try {
-        let successCount = 0;
-        const totalFiles = appState.processedFiles.length;
-        
-        for (let i = 0; i < totalFiles; i++) {
-            const file = appState.processedFiles[i];
-            
-            // Обновляем прогресс
-            sendButton.textContent = `Отправка ${i + 1}/${totalFiles}...`;
-            
-            try {
-                // Отправляем файл
-                const success = await sendFileToBot(file, file.name);
-                if (success) {
-                    successCount++;
-                    console.log(`✅ Файл отправлен: ${file.name}`);
-                }
-            } catch (error) {
-                console.error(`❌ Ошибка отправки файла ${file.name}:`, error);
-            }
-            
-            // Задержка между отправками (1 секунда)
-            await new Promise(resolve => setTimeout(resolve, 1000));
-        }
-        
-        // Показываем результат
-        if (successCount > 0) {
-            if (successCount === totalFiles) {
-                alert(`✅ Все ${successCount} файлов успешно отправлены в бота!`);
-            } else {
-                alert(`✅ Успешно отправлено ${successCount} из ${totalFiles} файлов в бота!`);
-            }
-            
-            // Закрываем модальное окно после успешной отправки
-            setTimeout(() => {
-                downloadModal.classList.remove('active');
-                blurBackground.classList.remove('active');
-                resetAppState();
-            }, 2000);
-        } else {
-            alert('❌ Не удалось отправить файлы. Проверьте подключение к интернету и попробуйте еще раз.');
-        }
-        
-    } catch (error) {
-        console.error('Общая ошибка при отправке файлов:', error);
-        alert('❌ Произошла ошибка при отправке файлов. Попробуйте еще раз.');
-    } finally {
-        sendButton.textContent = originalText;
-        sendButton.disabled = false;
     }
 }
 
 // Инициализация при загрузке
 document.addEventListener('DOMContentLoaded', function() {
     initTelegramWebApp();
-    
-    // Обработчик для кнопки закрытия модального окна
-    closeModalButton.addEventListener('click', function() {
-        downloadModal.classList.remove('active');
-        blurBackground.classList.remove('active');
-        resetAppState();
-    });
-    
-    // Обработчик для кнопки отправки в бота
-    sendToBotButton.addEventListener('click', sendFilesToBot);
 });
 
 // Обработчики событий
@@ -305,13 +164,11 @@ async function processSingleFile(audioFile, coverImage, title, artist, album) {
 
             // Добавляем обложку если есть
             if (coverImage) {
-                console.log('Добавляем обложку в файл');
                 const coverArrayBuffer = await coverImage.arrayBuffer();
                 writer.setFrame('APIC', {
-                    type: 3, // 3 = cover image
+                    type: 3,
                     data: new Uint8Array(coverArrayBuffer),
-                    description: 'Cover',
-                    useUnicodeEncoding: false
+                    description: 'Cover'
                 });
             }
 
@@ -326,7 +183,6 @@ async function processSingleFile(audioFile, coverImage, title, artist, album) {
             const fileName = `${title || 'track'} - ${artist || 'artist'}.mp3`;
             const newFile = new File([blob], fileName, { type: 'audio/mpeg' });
 
-            console.log('Файл обработан с обложкой:', fileName);
             resolve(newFile);
         } catch (error) {
             reject(error);
@@ -336,13 +192,6 @@ async function processSingleFile(audioFile, coverImage, title, artist, album) {
 
 function showDownloadModal() {
     downloadLinks.innerHTML = '';
-
-    // Показываем кнопку "Отправить в бота" только если мы в Telegram Web App
-    if (appState.isTelegramWebApp) {
-        sendToBotButton.style.display = 'block';
-    } else {
-        sendToBotButton.style.display = 'none';
-    }
 
     appState.processedFiles.forEach((file, index) => {
         const downloadLink = document.createElement('a');
@@ -366,6 +215,16 @@ function showDownloadModal() {
         downloadLinks.appendChild(container);
     });
 
+    const closeButton = document.createElement('button');
+    closeButton.className = 'modal-close-button';
+    closeButton.textContent = 'Закрыть';
+    closeButton.addEventListener('click', function() {
+        downloadModal.classList.remove('active');
+        blurBackground.classList.remove('active');
+        resetAppState();
+    });
+
+    downloadLinks.appendChild(closeButton);
     downloadModal.classList.add('active');
 }
 
