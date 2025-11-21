@@ -29,7 +29,7 @@ const albumNameInput = document.getElementById('albumName');
 const audioFileList = document.getElementById('audioFileList');
 
 // Токен бота (замените на ваш)
-const BOT_TOKEN = TOKEN;
+const BOT_TOKEN = "8486286436:AAFLyKilUp1yNQusRd2qrzeR2IMjm_iTl44";
 
 // Инициализация Telegram Web App
 function initTelegramWebApp() {
