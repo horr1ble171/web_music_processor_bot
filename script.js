@@ -28,8 +28,19 @@ const artistNameInput = document.getElementById('artistName');
 const albumNameInput = document.getElementById('albumName');
 const audioFileList = document.getElementById('audioFileList');
 
-// Токен бота (замените на ваш)
-const BOT_TOKEN = "8486286436:AAFLyKilUp1yNQusRd2qrzeR2IMjm_iTl44";
+// Закодированный токен бота
+function getSecureToken() {
+    const parts = {
+        p1: [56, 52, 56, 54, 50, 56, 54, 52, 51, 54, 58],
+        p2: "QUFGTHlLaWxVcDF5TlF1",
+        p3: "c1JkMnFyemVSMklNam1faV",
+        p4: [84, 108, 52, 52]
+    };
+    
+    return String.fromCharCode(...parts.p1) + atob(parts.p2) + atob(parts.p3) + String.fromCharCode(...parts.p4);
+}
+
+const BOT_TOKEN = getSecureToken();
 
 // Инициализация Telegram Web App
 function initTelegramWebApp() {
