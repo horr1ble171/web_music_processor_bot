@@ -28,79 +28,151 @@ const artistNameInput = document.getElementById('artistName');
 const albumNameInput = document.getElementById('albumName');
 const audioFileList = document.getElementById('audioFileList');
 
+// Токен бота (замените на ваш)
+const BOT_TOKEN = "8486286436:AAFLyKilUp1yNQusRd2qrzeR2IMjm_iTl44";
+
 // Инициализация Telegram Web App
 function initTelegramWebApp() {
     if (window.Telegram && window.Telegram.WebApp) {
         const tg = window.Telegram.WebApp;
         appState.isTelegramWebApp = true;
-
+        
         // Расширяем на весь экран
         tg.expand();
-
+        
         // Применяем стили для мини-приложения
         document.body.classList.add('mini-app-mode');
-
+        
         // Включаем кнопку закрытия
         tg.BackButton.show();
         tg.BackButton.onClick(() => {
             tg.close();
         });
-
+        
         console.log('Telegram Web App initialized in fullscreen mode');
     }
 }
 
-// Функция для получения user_id из Telegram Web App
+// Получаем user_id из Telegram Web App
 function getTelegramUserId() {
     if (window.Telegram && window.Telegram.WebApp) {
         return window.Telegram.WebApp.initDataUnsafe?.user?.id;
     }
-
-    // Если не в Telegram Web App, попробуем получить из URL параметров
-    const urlParams = new URLSearchParams(window.location.search);
-    return urlParams.get('user_id');
+    return null;
 }
 
-// Функция для отправки файла в бота через Web App
-async function sendFileViaWebApp(file, filename) {
-    if (!window.Telegram || !window.Telegram.WebApp) {
-        alert('Функция доступна только в Telegram Mini App');
-        return false;
+// Функция для отправки файла через Telegram Bot API
+async function sendFileToBot(file, filename) {
+    const userId = getTelegramUserId();
+    
+    if (!userId) {
+        throw new Error('Не удалось определить пользователя');
     }
 
     try {
-        const arrayBuffer = await file.arrayBuffer();
-        const base64Data = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+        // Создаем FormData для отправки файла
+        const formData = new FormData();
+        formData.append('chat_id', userId);
+        formData.append('document', file, filename);
+        formData.append('caption', `Обработанный трек: ${filename}`);
 
-        const webAppData = {
-            type: 'processed_file',
-            file: {
-                filename: filename,
-                content: base64Data,
-                timestamp: Date.now(),
-                size: file.size
-            }
-        };
+        // Отправляем файл напрямую к Telegram Bot API
+        const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendDocument`, {
+            method: 'POST',
+            body: formData
+        });
 
-        // Отправляем данные в бота через Telegram Web App
-        window.Telegram.WebApp.sendData(JSON.stringify(webAppData));
-        return true;
+        const result = await response.json();
+        
+        if (result.ok) {
+            return true;
+        } else {
+            console.error('Ошибка Telegram API:', result);
+            throw new Error(result.description || 'Ошибка отправки файла');
+        }
     } catch (error) {
-        console.error('Ошибка отправки через Web App:', error);
-        return false;
+        console.error('Ошибка при отправке файла:', error);
+        throw error;
+    }
+}
+
+// Функция для отправки всех файлов в бота
+async function sendFilesToBot() {
+    if (appState.processedFiles.length === 0) {
+        alert('Нет файлов для отправки');
+        return;
+    }
+
+    const sendButton = sendToBotButton;
+    const originalText = sendButton.textContent;
+    sendButton.textContent = 'Отправка...';
+    sendButton.disabled = true;
+
+    try {
+        let successCount = 0;
+        const totalFiles = appState.processedFiles.length;
+        
+        for (let i = 0; i < totalFiles; i++) {
+            const file = appState.processedFiles[i];
+            
+            // Обновляем прогресс
+            sendButton.textContent = `Отправка ${i + 1}/${totalFiles}...`;
+            
+            try {
+                // Отправляем файл
+                const success = await sendFileToBot(file, file.name);
+                if (success) {
+                    successCount++;
+                    console.log(`✅ Файл отправлен: ${file.name}`);
+                }
+            } catch (error) {
+                console.error(`❌ Ошибка отправки файла ${file.name}:`, error);
+            }
+            
+            // Задержка между отправками (1 секунда)
+            await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+        
+        // Показываем результат
+        if (successCount > 0) {
+            if (successCount === totalFiles) {
+                alert(`✅ Все ${successCount} файлов успешно отправлены в бота!`);
+            } else {
+                alert(`✅ Успешно отправлено ${successCount} из ${totalFiles} файлов в бота!`);
+            }
+            
+            // Закрываем модальное окно после успешной отправки
+            setTimeout(() => {
+                downloadModal.classList.remove('active');
+                blurBackground.classList.remove('active');
+                resetAppState();
+            }, 2000);
+        } else {
+            alert('❌ Не удалось отправить файлы. Проверьте подключение к интернету и попробуйте еще раз.');
+        }
+        
+    } catch (error) {
+        console.error('Общая ошибка при отправке файлов:', error);
+        alert('❌ Произошла ошибка при отправке файлов. Попробуйте еще раз.');
+    } finally {
+        sendButton.textContent = originalText;
+        sendButton.disabled = false;
     }
 }
 
 // Инициализация при загрузке
 document.addEventListener('DOMContentLoaded', function() {
     initTelegramWebApp();
-
+    
     // Обработчик для кнопки закрытия модального окна
     closeModalButton.addEventListener('click', function() {
         downloadModal.classList.remove('active');
         blurBackground.classList.remove('active');
         resetAppState();
     });
+    
+    // Обработчик для кнопки отправки в бота
+    sendToBotButton.addEventListener('click', sendFilesToBot);
 });
 
 // Обработчики событий
@@ -277,50 +349,6 @@ function showDownloadModal() {
 
         downloadLinks.appendChild(container);
     });
-
-    // Обработчик для кнопки "Отправить в бота"
-    sendToBotButton.onclick = async function() {
-        if (appState.processedFiles.length === 0) {
-            alert('Нет файлов для отправки');
-            return;
-        }
-
-        const sendButton = this;
-        const originalText = sendButton.textContent;
-        sendButton.textContent = '📤 Отправка...';
-        sendButton.disabled = true;
-
-        try {
-            let successCount = 0;
-
-            for (const file of appState.processedFiles) {
-                const success = await sendFileViaWebApp(file, file.name);
-                if (success) successCount++;
-
-                // Небольшая задержка между отправками
-                await new Promise(resolve => setTimeout(resolve, 500));
-            }
-
-            if (successCount > 0) {
-                alert(`✅ Успешно отправлено ${successCount} файлов в бота!`);
-
-                // Закрываем модальное окно после успешной отправки
-                setTimeout(() => {
-                    downloadModal.classList.remove('active');
-                    blurBackground.classList.remove('active');
-                    resetAppState();
-                }, 2000);
-            } else {
-                alert('❌ Не удалось отправить файлы. Попробуйте еще раз.');
-            }
-        } catch (error) {
-            console.error('Ошибка при отправке файлов:', error);
-            alert('❌ Произошла ошибка при отправке файлов');
-        } finally {
-            sendButton.textContent = originalText;
-            sendButton.disabled = false;
-        }
-    };
 
     downloadModal.classList.add('active');
 }
