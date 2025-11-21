@@ -456,7 +456,7 @@ body.mini-app-mode {
 
 /* ИСПРАВЛЕННЫЕ СТИЛИ ДЛЯ КНОПКИ ЗАКРЫТЬ */
 .modal-close-button {
-    background-color: var(--primary-color); /* Теперь черный цвет как у других кнопок */
+    background-color: var(--primary-color);
     color: white;
     border: none;
     padding: 12px 24px;
@@ -472,11 +472,17 @@ body.mini-app-mode {
     transform: translateY(-2px);
 }
 
+/* Стили для кнопки отправки в бота */
+#sendToBotButton {
+    width: 100%;
+    margin-top: 15px;
+}
+
 @media (max-width: 600px) {
     body {
         padding: 15px;
     }
-    
+
     body.mini-app-mode {
         padding: 15px;
     }
@@ -493,19 +499,19 @@ body.mini-app-mode {
         padding: 20px;
         width: 95%;
     }
-    
+
     .input {
         padding: 12px;
     }
-    
+
     .button {
         padding: 14px 20px;
     }
-    
+
     .download-button {
         padding: 10px 20px;
     }
-    
+
     .modal-close-button {
         padding: 10px 20px;
     }
