@@ -28,8 +28,32 @@ const artistNameInput = document.getElementById('artistName');
 const albumNameInput = document.getElementById('albumName');
 const audioFileList = document.getElementById('audioFileList');
 
-// Токен бота (замените на ваш)
-const BOT_TOKEN = "8486286436:AAFLyKilUp1yNQusRd2qrzeR2IMjm_iTl44";
+// Токен бота (будет загружен из config.js)
+let BOT_TOKEN = "";
+
+// Инициализация приложения
+function initializeApp() {
+    // Пытаемся загрузить токен из config.js
+    try {
+        if (typeof CONFIG !== 'undefined' && CONFIG.BOT_TOKEN) {
+            BOT_TOKEN = CONFIG.BOT_TOKEN;
+            console.log('✅ Токен бота загружен');
+        } else {
+            console.warn('❌ Токен бота не найден в config.js');
+            // Показываем сообщение пользователю
+            setTimeout(() => {
+                if (!BOT_TOKEN) {
+                    console.log('Токен все еще не загружен');
+                }
+            }, 1000);
+        }
+    } catch (error) {
+        console.error('❌ Ошибка загрузки config.js:', error);
+    }
+    
+    initTelegramWebApp();
+    setupEventListeners();
+}
 
 // Инициализация Telegram Web App
 function initTelegramWebApp() {
@@ -53,6 +77,20 @@ function initTelegramWebApp() {
     }
 }
 
+// Настройка обработчиков событий
+function setupEventListeners() {
+    closeModalButton.addEventListener('click', function() {
+        downloadModal.classList.remove('active');
+        blurBackground.classList.remove('active');
+        resetAppState();
+    });
+    
+    sendToBotButton.addEventListener('click', sendFilesToBot);
+    audioFilesInput.addEventListener('change', handleAudioFilesSelection);
+    coverImageInput.addEventListener('change', handleCoverImageSelection);
+    processButton.addEventListener('click', handleProcessFiles);
+}
+
 // Получаем user_id из Telegram Web App
 function getTelegramUserId() {
     if (window.Telegram && window.Telegram.WebApp) {
@@ -66,7 +104,12 @@ async function sendFileToBot(file, filename) {
     const userId = getTelegramUserId();
     
     if (!userId) {
-        throw new Error('Не удалось определить пользователя');
+        throw new Error('Не удалось определить пользователя. Откройте приложение через Telegram бота.');
+    }
+
+    // Проверяем, что токен загружен
+    if (!BOT_TOKEN) {
+        throw new Error('Ошибка конфигурации. Токен бота не загружен.');
     }
 
     try {
@@ -74,7 +117,7 @@ async function sendFileToBot(file, filename) {
         const formData = new FormData();
         formData.append('chat_id', userId);
         formData.append('document', file, filename);
-        formData.append('caption', `Обработанный трек: ${filename}`);
+        formData.append('caption', `🎵 Обработанный трек: ${filename}`);
 
         // Отправляем файл напрямую к Telegram Bot API
         const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendDocument`, {
@@ -105,7 +148,7 @@ async function sendFilesToBot() {
 
     const sendButton = sendToBotButton;
     const originalText = sendButton.textContent;
-    sendButton.textContent = 'Отправка...';
+    sendButton.textContent = '📤 Отправка...';
     sendButton.disabled = true;
 
     try {
@@ -116,7 +159,7 @@ async function sendFilesToBot() {
             const file = appState.processedFiles[i];
             
             // Обновляем прогресс
-            sendButton.textContent = `Отправка ${i + 1}/${totalFiles}...`;
+            sendButton.textContent = `📤 Отправка ${i + 1}/${totalFiles}...`;
             
             try {
                 // Отправляем файл
@@ -160,27 +203,7 @@ async function sendFilesToBot() {
     }
 }
 
-// Инициализация при загрузке
-document.addEventListener('DOMContentLoaded', function() {
-    initTelegramWebApp();
-    
-    // Обработчик для кнопки закрытия модального окна
-    closeModalButton.addEventListener('click', function() {
-        downloadModal.classList.remove('active');
-        blurBackground.classList.remove('active');
-        resetAppState();
-    });
-    
-    // Обработчик для кнопки отправки в бота
-    sendToBotButton.addEventListener('click', sendFilesToBot);
-});
-
-// Обработчики событий
-audioFilesInput.addEventListener('change', handleAudioFilesSelection);
-coverImageInput.addEventListener('change', handleCoverImageSelection);
-processButton.addEventListener('click', handleProcessFiles);
-
-// Функции обработки
+// Функции обработки файлов
 function handleAudioFilesSelection(event) {
     const files = Array.from(event.target.files);
 
@@ -404,5 +427,5 @@ function resetAppState() {
     document.querySelector('#coverImage ~ .text').style.display = 'flex';
 }
 
-// Обновляем обработчик кнопки
-processButton.addEventListener('click', handleProcessFiles);
+// Запускаем приложение когда DOM загружен
+document.addEventListener('DOMContentLoaded', initializeApp);
