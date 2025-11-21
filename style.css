@@ -456,7 +456,7 @@ body.mini-app-mode {
 
 /* ИСПРАВЛЕННЫЕ СТИЛИ ДЛЯ КНОПКИ ЗАКРЫТЬ */
 .modal-close-button {
-    background-color: var(--primary-color);
+    background-color: var(--primary-color); /* Теперь черный цвет как у других кнопок */
     color: white;
     border: none;
     padding: 12px 24px;
@@ -470,12 +470,6 @@ body.mini-app-mode {
 .modal-close-button:hover {
     background-color: #333333;
     transform: translateY(-2px);
-}
-
-/* Стили для кнопки отправки в бота */
-#sendToBotButton {
-    width: 100%;
-    margin-top: 15px;
 }
 
 @media (max-width: 600px) {
