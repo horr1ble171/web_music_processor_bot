@@ -16,6 +16,7 @@
         <div class="header">
             <h1>Музыка для профиля</h1>
             <p>Обработка MP3 файлов с добавлением метаданных и обложки</p>
+            <p>by @zxchorrible</p>
         </div>
 
         <div class="card" id="mainInterface">
@@ -30,7 +31,7 @@
                         </svg>
                     </div>
                     <div class="text">
-                        <span>Нажмите для загрузки MP3 файлов</span>
+                        <span>Нажмите или перетащите MP3 файлы</span>
                     </div>
                     <input type="file" id="audioFiles" multiple accept=".mp3">
                 </label>
@@ -48,11 +49,15 @@
                         </svg>
                     </div>
                     <div class="text">
-                        <span>Нажмите для загрузки обложки</span>
+                        <span>Нажмите или перетащите обложку</span>
                     </div>
-                    <img class="preview-image" id="coverPreview" alt="Предпросмотр обложки">
                     <input type="file" id="coverImage" accept=".jpg,.jpeg,.png">
                 </label>
+                <div class="file-list" id="coverFileList"></div>
+                <div class="preview-container" id="coverPreviewContainer">
+                    <div class="preview-title">Предпросмотр обложки:</div>
+                    <img class="preview-image" id="coverPreview" alt="Предпросмотр обложки">
+                </div>
             </div>
 
             <div class="input-group">
@@ -71,7 +76,6 @@
             </div>
 
             <button class="button" id="processButton">
-                <div class="outline"></div>
                 <span>Обработать файлы</span>
             </button>
         </div>
@@ -81,18 +85,7 @@
         <div class="modal processing-modal">
             <div class="modal-title">Обработка файлов</div>
             <div class="modal-content">
-                <div class="spinner active">
-                    <div></div>
-                    <div></div>
-                    <div></div>
-                    <div></div>
-                    <div></div>
-                    <div></div>
-                    <div></div>
-                    <div></div>
-                    <div></div>
-                    <div></div>
-                </div>
+                <div class="spinner active"></div>
                 <p>Идет обработка файлов...</p>
                 <div class="progress-bar">
                     <div class="progress-fill" id="progressFill"></div>
@@ -107,7 +100,8 @@
             <div class="modal-title">Обработка завершена</div>
             <div class="modal-content">
                 <p>Файлы успешно обработаны и готовы к скачиванию</p>
-                <p><small>Файлы содержат новые метаданные и обложку</small></p>
+                <p><small>Нажмите на название файла для скачивания</small></p>
+                <p><small>Для мобильных устройств: нажмите и удерживайте ссылку, затем выберите "Скачать"</small></p>
             </div>
             <div id="downloadLinks"></div>
         </div>
