@@ -3,28 +3,14 @@ const appState = {
     audioFiles: [],
     coverImage: null,
     processedFiles: [],
-    isTelegramWebApp: false
+    isTelegramWebApp: false,
+    isProcessing: false
 };
 
 // Элементы DOM
-const blurBackground = document.getElementById('blurBackground');
-const processingModal = document.getElementById('processingModal');
-const downloadModal = document.getElementById('downloadModal');
-const downloadLinks = document.getElementById('downloadLinks');
-const progressFill = document.getElementById('progressFill');
-const progressText = document.getElementById('progressText');
-
-// Кнопки
-const processButton = document.getElementById('processButton');
-
-// Входные данные
-const audioFilesInput = document.getElementById('audioFiles');
-const coverImageInput = document.getElementById('coverImage');
-const coverPreview = document.getElementById('coverPreview');
-const trackTitleInput = document.getElementById('trackTitle');
-const artistNameInput = document.getElementById('artistName');
-const albumNameInput = document.getElementById('albumName');
-const audioFileList = document.getElementById('audioFileList');
+let blurBackground, processingModal, downloadModal, downloadLinks, progressFill, progressText;
+let processButton, audioFilesInput, coverImageInput, coverPreview, coverPreviewContainer;
+let trackTitleInput, artistNameInput, albumNameInput, audioFileList, coverFileList;
 
 // Инициализация Telegram Web App
 function initTelegramWebApp() {
@@ -38,21 +24,144 @@ function initTelegramWebApp() {
         // Применяем стили для мини-приложения
         document.body.classList.add('mini-app-mode');
 
+        // Устанавливаем цвет тему
+        tg.setHeaderColor('#000000');
+        tg.setBackgroundColor('#000000');
+
         console.log('Telegram Web App initialized in fullscreen mode');
     }
 }
 
 // Инициализация при загрузке
 document.addEventListener('DOMContentLoaded', function() {
+    // Инициализируем DOM элементы
+    initDOMElements();
+
     initTelegramWebApp();
+    initDragAndDrop();
+    initInputListeners();
+    initFileInputReset();
 });
 
-// Обработчики событий
-audioFilesInput.addEventListener('change', handleAudioFilesSelection);
-coverImageInput.addEventListener('change', handleCoverImageSelection);
-processButton.addEventListener('click', handleProcessFiles);
+// Инициализация DOM элементов
+function initDOMElements() {
+    blurBackground = document.getElementById('blurBackground');
+    processingModal = document.getElementById('processingModal');
+    downloadModal = document.getElementById('downloadModal');
+    downloadLinks = document.getElementById('downloadLinks');
+    progressFill = document.getElementById('progressFill');
+    progressText = document.getElementById('progressText');
+    processButton = document.getElementById('processButton');
+    audioFilesInput = document.getElementById('audioFiles');
+    coverImageInput = document.getElementById('coverImage');
+    coverPreview = document.getElementById('coverPreview');
+    coverPreviewContainer = document.getElementById('coverPreviewContainer');
+    trackTitleInput = document.getElementById('trackTitle');
+    artistNameInput = document.getElementById('artistName');
+    albumNameInput = document.getElementById('albumName');
+    audioFileList = document.getElementById('audioFileList');
+    coverFileList = document.getElementById('coverFileList');
+}
 
-// Функции обработки
+// Инициализация обработчиков событий
+function initInputListeners() {
+    audioFilesInput.addEventListener('change', handleAudioFilesSelection);
+    coverImageInput.addEventListener('change', handleCoverImageSelection);
+    processButton.addEventListener('click', handleProcessFiles);
+
+    // Валидация в реальном времени
+    [trackTitleInput, artistNameInput, albumNameInput].forEach(input => {
+        input.addEventListener('input', validateForm);
+    });
+}
+
+// Drag and Drop функциональность
+function initDragAndDrop() {
+    const audioDropZone = audioFilesInput.closest('.custum-file-upload');
+    const coverDropZone = coverImageInput.closest('.custum-file-upload');
+
+    [audioDropZone, coverDropZone].forEach(zone => {
+        if (!zone) return;
+
+        zone.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            this.classList.add('drag-over');
+        });
+
+        zone.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            this.classList.remove('drag-over');
+        });
+
+        zone.addEventListener('drop', function(e) {
+            e.preventDefault();
+            this.classList.remove('drag-over');
+
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                if (this === audioDropZone) {
+                    handleDroppedAudioFiles(files);
+                } else {
+                    handleDroppedCoverImage(files[0]);
+                }
+            }
+        });
+    });
+}
+
+function handleDroppedAudioFiles(files) {
+    const validFiles = Array.from(files).filter(file => {
+        const extension = '.' + file.name.split('.').pop().toLowerCase();
+        return extension === '.mp3';
+    });
+
+    if (validFiles.length === 0) {
+        showError('Пожалуйста, перетащите MP3 файлы');
+        return;
+    }
+
+    appState.audioFiles = appState.audioFiles.concat(validFiles);
+    updateFileList();
+    validateForm();
+}
+
+function handleDroppedCoverImage(file) {
+    if (!file) return;
+
+    const supportedFormats = ['.jpg', '.jpeg', '.png'];
+    const extension = '.' + file.name.split('.').pop().toLowerCase();
+
+    if (!supportedFormats.includes(extension)) {
+        showError('Пожалуйста, перетащите поддерживаемое изображение (JPG, PNG)');
+        return;
+    }
+
+    // Создаем событие change для имитации выбора файла
+    const dataTransfer = new DataTransfer();
+    dataTransfer.items.add(file);
+    coverImageInput.files = dataTransfer.files;
+
+    // Вызываем обработчик напрямую
+    handleCoverImageSelection({ target: coverImageInput });
+}
+
+// Валидация формы
+function validateForm() {
+    const isValid = appState.audioFiles.length > 0 &&
+                   appState.coverImage &&
+                   trackTitleInput.value.trim() &&
+                   artistNameInput.value.trim() &&
+                   albumNameInput.value.trim();
+
+    processButton.disabled = !isValid;
+    return isValid;
+}
+
+function showError(message) {
+    alert(message);
+}
+
+// Обработчики событий
 function handleAudioFilesSelection(event) {
     const files = Array.from(event.target.files);
 
@@ -62,12 +171,13 @@ function handleAudioFilesSelection(event) {
     });
 
     if (validFiles.length === 0) {
-        alert('Пожалуйста, выберите MP3 файлы');
+        showError('Пожалуйста, выберите MP3 файлы');
         return;
     }
 
     appState.audioFiles = appState.audioFiles.concat(validFiles);
     updateFileList();
+    validateForm();
 }
 
 function handleCoverImageSelection(event) {
@@ -78,7 +188,7 @@ function handleCoverImageSelection(event) {
     const extension = '.' + file.name.split('.').pop().toLowerCase();
 
     if (!supportedFormats.includes(extension)) {
-        alert('Пожалуйста, выберите поддерживаемое изображение (JPG, PNG)');
+        showError('Пожалуйста, выберите поддерживаемое изображение (JPG, PNG)');
         return;
     }
 
@@ -86,40 +196,97 @@ function handleCoverImageSelection(event) {
 
     const reader = new FileReader();
     reader.onload = function(e) {
+        // Обновляем превью обложки
         coverPreview.src = e.target.result;
-        coverPreview.style.display = 'block';
+        coverPreviewContainer.style.display = 'block';
 
-        document.querySelector('#coverImage ~ .icon').style.display = 'none';
-        document.querySelector('#coverImage ~ .text').style.display = 'none';
+        // Обновляем список файлов для обложки
+        updateCoverFileList();
     };
     reader.readAsDataURL(file);
+
+    validateForm();
+}
+
+// Функция обновления списка файлов обложки
+function updateCoverFileList() {
+    if (!coverFileList) return;
+
+    coverFileList.innerHTML = '';
+
+    if (appState.coverImage) {
+        const fileItem = document.createElement('div');
+        fileItem.className = 'file-item';
+
+        const fileInfo = document.createElement('div');
+        fileInfo.className = 'file-info';
+
+        const fileName = document.createElement('div');
+        fileName.className = 'file-name';
+        fileName.textContent = appState.coverImage.name;
+
+        const fileSize = document.createElement('div');
+        fileSize.className = 'file-size';
+        fileSize.textContent = `${(appState.coverImage.size / 1024 / 1024).toFixed(2)} MB`;
+
+        fileInfo.appendChild(fileName);
+        fileInfo.appendChild(fileSize);
+
+        const fileRemove = document.createElement('div');
+        fileRemove.className = 'file-remove';
+        fileRemove.textContent = '×';
+        fileRemove.title = 'Удалить обложку';
+        fileRemove.addEventListener('click', (e) => {
+            e.stopPropagation();
+            removeCoverImage();
+        });
+
+        fileItem.appendChild(fileInfo);
+        fileItem.appendChild(fileRemove);
+        coverFileList.appendChild(fileItem);
+    }
+}
+
+// Функция удаления обложки
+function removeCoverImage() {
+    appState.coverImage = null;
+    coverImageInput.value = '';
+    coverPreviewContainer.style.display = 'none';
+    coverFileList.innerHTML = '';
+
+    validateForm();
 }
 
 async function handleProcessFiles() {
+    if (appState.isProcessing) return;
+
     if (appState.audioFiles.length === 0) {
-        alert('Пожалуйста, загрузите MP3 файлы');
+        showError('Пожалуйста, загрузите MP3 файлы');
         return;
     }
 
     if (!appState.coverImage) {
-        alert('Пожалуйста, загрузите обложку');
+        showError('Пожалуйста, загрузите обложку');
         return;
     }
 
     if (!trackTitleInput.value.trim()) {
-        alert('Пожалуйста, введите название трека');
+        showError('Пожалуйста, введите название трека');
         return;
     }
 
     if (!artistNameInput.value.trim()) {
-        alert('Пожалуйста, введите имя исполнителя');
+        showError('Пожалуйста, введите имя исполнителя');
         return;
     }
 
     if (!albumNameInput.value.trim()) {
-        alert('Пожалуйста, введите название альбома');
+        showError('Пожалуйста, введите название альбома');
         return;
     }
+
+    appState.isProcessing = true;
+    processButton.disabled = true;
 
     blurBackground.classList.add('active');
     processingModal.classList.add('active');
@@ -142,7 +309,8 @@ async function handleProcessFiles() {
             );
             appState.processedFiles.push(processedFile);
 
-            await new Promise(resolve => setTimeout(resolve, 500));
+            // Искусственная задержка для плавности анимации
+            await new Promise(resolve => setTimeout(resolve, 300));
         }
 
         processingModal.classList.remove('active');
@@ -150,9 +318,12 @@ async function handleProcessFiles() {
 
     } catch (error) {
         console.error('Ошибка обработки:', error);
-        alert('Произошла ошибка при обработке файлов: ' + error.message);
+        showError('Произошла ошибка при обработке файлов: ' + error.message);
         processingModal.classList.remove('active');
         blurBackground.classList.remove('active');
+    } finally {
+        appState.isProcessing = false;
+        processButton.disabled = false;
     }
 }
 
@@ -191,6 +362,8 @@ async function processSingleFile(audioFile, coverImage, title, artist, album) {
 }
 
 function showDownloadModal() {
+    if (!downloadLinks) return;
+
     downloadLinks.innerHTML = '';
 
     appState.processedFiles.forEach((file, index) => {
@@ -198,17 +371,21 @@ function showDownloadModal() {
         downloadLink.href = URL.createObjectURL(file);
         downloadLink.download = file.name;
         downloadLink.className = 'download-button';
-        downloadLink.textContent = `Скачать ${file.name}`;
+        downloadLink.textContent = file.name;
         downloadLink.style.display = 'block';
+
+        // Для мобильных устройств добавляем дополнительные атрибуты
+        downloadLink.setAttribute('target', '_blank');
+        downloadLink.setAttribute('rel', 'noopener noreferrer');
 
         const fileInfo = document.createElement('div');
         fileInfo.style.fontSize = '12px';
-        fileInfo.style.color = '#666';
-        fileInfo.style.marginTop = '5px';
+        fileInfo.style.color = 'var(--text-tertiary)';
+        fileInfo.style.marginTop = '4px';
         fileInfo.textContent = `Размер: ${(file.size / 1024 / 1024).toFixed(2)} MB`;
 
         const container = document.createElement('div');
-        container.style.marginBottom = '15px';
+        container.style.marginBottom = '12px';
         container.appendChild(downloadLink);
         container.appendChild(fileInfo);
 
@@ -217,7 +394,7 @@ function showDownloadModal() {
 
     const closeButton = document.createElement('button');
     closeButton.className = 'modal-close-button';
-    closeButton.textContent = 'Закрыть';
+    closeButton.textContent = 'Готово';
     closeButton.addEventListener('click', function() {
         downloadModal.classList.remove('active');
         blurBackground.classList.remove('active');
@@ -229,31 +406,45 @@ function showDownloadModal() {
 }
 
 function updateFileList() {
+    if (!audioFileList) return;
+
     audioFileList.innerHTML = '';
 
     appState.audioFiles.forEach((file, index) => {
         const fileItem = document.createElement('div');
         fileItem.className = 'file-item';
 
+        const fileInfo = document.createElement('div');
+        fileInfo.className = 'file-info';
+
         const fileName = document.createElement('div');
         fileName.className = 'file-name';
         fileName.textContent = file.name;
 
         const fileSize = document.createElement('div');
-        fileSize.style.fontSize = '12px';
-        fileSize.style.color = '#666';
-        fileSize.textContent = `(${(file.size / 1024 / 1024).toFixed(2)} MB)`;
+        fileSize.className = 'file-size';
+        fileSize.textContent = `${(file.size / 1024 / 1024).toFixed(2)} MB`;
+
+        fileInfo.appendChild(fileName);
+        fileInfo.appendChild(fileSize);
 
         const fileRemove = document.createElement('div');
         fileRemove.className = 'file-remove';
         fileRemove.textContent = '×';
-        fileRemove.addEventListener('click', () => {
+        fileRemove.title = 'Удалить файл';
+        fileRemove.addEventListener('click', (e) => {
+            e.stopPropagation();
             appState.audioFiles.splice(index, 1);
             updateFileList();
+            validateForm();
+
+            // Сбрасываем значение input при удалении файлов
+            if (appState.audioFiles.length === 0) {
+                audioFilesInput.value = '';
+            }
         });
 
-        fileItem.appendChild(fileName);
-        fileItem.appendChild(fileSize);
+        fileItem.appendChild(fileInfo);
         fileItem.appendChild(fileRemove);
         audioFileList.appendChild(fileItem);
     });
@@ -263,21 +454,69 @@ function resetAppState() {
     appState.audioFiles = [];
     appState.coverImage = null;
     appState.processedFiles = [];
+    appState.isProcessing = false;
 
-    processButton.classList.remove('sent');
+    processButton.disabled = false;
+
+    // Полностью сбрасываем значения inputs
     audioFilesInput.value = '';
     coverImageInput.value = '';
+
     trackTitleInput.value = '';
     artistNameInput.value = '';
     albumNameInput.value = '';
-    audioFileList.innerHTML = '';
-    coverPreview.style.display = 'none';
-    progressFill.style.width = '0%';
-    progressText.textContent = 'Обработано: 0/0';
 
-    document.querySelector('#coverImage ~ .icon').style.display = 'flex';
-    document.querySelector('#coverImage ~ .text').style.display = 'flex';
+    if (audioFileList) audioFileList.innerHTML = '';
+    if (coverFileList) coverFileList.innerHTML = '';
+    if (coverPreviewContainer) coverPreviewContainer.style.display = 'none';
+    if (progressFill) progressFill.style.width = '0%';
+    if (progressText) progressText.textContent = 'Обработано: 0/0';
 }
 
-// Обновляем обработчик кнопки
-processButton.addEventListener('click', handleProcessFiles);
+// Добавляем функцию для принудительного сброса input при клике на зону загрузки
+function initFileInputReset() {
+    const audioUploadZone = audioFilesInput.closest('.custum-file-upload');
+    const coverUploadZone = coverImageInput.closest('.custum-file-upload');
+
+    if (!audioUploadZone || !coverUploadZone) return;
+
+    // Дополнительная защита: при клике на зону загрузки сбрасываем значение,
+    // если файлов нет в состоянии приложения
+    audioUploadZone.addEventListener('click', function() {
+        if (appState.audioFiles.length === 0) {
+            audioFilesInput.value = '';
+        }
+    });
+
+    coverUploadZone.addEventListener('click', function() {
+        if (!appState.coverImage) {
+            coverImageInput.value = '';
+        }
+    });
+}
+
+// Функция для определения мобильного устройства
+function isMobileDevice() {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+}
+
+// Альтернативный метод скачивания для мобильных устройств
+function forceDownload(url, filename) {
+    if (isMobileDevice()) {
+        // Для мобильных устройств открываем в новом окне
+        const newWindow = window.open(url, '_blank');
+        if (newWindow) {
+            setTimeout(() => {
+                newWindow.close();
+            }, 1000);
+        }
+    } else {
+        // Для десктопов используем стандартное скачивание
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+}
