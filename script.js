@@ -41,6 +41,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initDragAndDrop();
     initInputListeners();
     initFileInputReset();
+    initHapticFeedback(); // Инициализация вибрации
 });
 
 // Инициализация DOM элементов
@@ -75,6 +76,73 @@ function initInputListeners() {
     });
 }
 
+// --- HAPTIC FEEDBACK (ВИБРАЦИЯ) ---
+
+// Функция вызова вибрации
+function triggerHapticFeedback(type = 'light') {
+    // 1. Telegram Web App Haptic Feedback (Приоритет)
+    if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) {
+        const haptic = window.Telegram.WebApp.HapticFeedback;
+        try {
+            switch (type) {
+                case 'light':
+                case 'medium':
+                case 'heavy':
+                case 'rigid':
+                case 'soft':
+                    haptic.impactOccurred(type);
+                    break;
+                case 'error':
+                case 'success':
+                case 'warning':
+                    haptic.notificationOccurred(type);
+                    break;
+                case 'selection':
+                    haptic.selectionChanged();
+                    break;
+                default:
+                    haptic.impactOccurred('light');
+            }
+        } catch (e) {
+            console.error('Haptic error:', e);
+        }
+    }
+    // 2. Standard Vibration API (Fallback для Android/Web)
+    else if (navigator.vibrate) {
+        let duration = 10; // ms
+        switch (type) {
+            case 'light': duration = 10; break;
+            case 'medium': duration = 20; break;
+            case 'heavy': duration = 40; break;
+            case 'rigid': duration = 15; break;
+            case 'soft': duration = 5; break;
+            case 'error': duration = [50, 50, 50]; break; // Паттерн вибрации
+            case 'success': duration = 50; break;
+            case 'warning': duration = 30; break;
+            case 'selection': duration = 5; break;
+        }
+        try {
+            navigator.vibrate(duration);
+        } catch (e) {
+            // Игнорируем ошибки, если API заблокирован
+        }
+    }
+}
+
+// Инициализация глобального слушателя для вибрации
+function initHapticFeedback() {
+    document.body.addEventListener('click', (e) => {
+        // Ищем ближайший интерактивный элемент
+        const target = e.target.closest('button, .button, .custum-file-upload, .file-remove, .download-button, a, .modal-close-button');
+
+        if (target) {
+            triggerHapticFeedback('light');
+        }
+    });
+}
+
+// --- КОНЕЦ HAPTIC FEEDBACK ---
+
 // Drag and Drop функциональность
 function initDragAndDrop() {
     const audioDropZone = audioFilesInput.closest('.custum-file-upload');
@@ -96,6 +164,7 @@ function initDragAndDrop() {
         zone.addEventListener('drop', function(e) {
             e.preventDefault();
             this.classList.remove('drag-over');
+            triggerHapticFeedback('medium'); // Вибрация при drop
 
             const files = e.dataTransfer.files;
             if (files.length > 0) {
@@ -158,6 +227,7 @@ function validateForm() {
 }
 
 function showError(message) {
+    triggerHapticFeedback('error'); // Вибрация ошибки
     alert(message);
 }
 
@@ -287,6 +357,7 @@ async function handleProcessFiles() {
 
     appState.isProcessing = true;
     processButton.disabled = true;
+    triggerHapticFeedback('medium'); // Вибрация начала обработки
 
     blurBackground.classList.add('active');
     processingModal.classList.add('active');
@@ -363,6 +434,8 @@ async function processSingleFile(audioFile, coverImage, title, artist, album) {
 
 function showDownloadModal() {
     if (!downloadLinks) return;
+
+    triggerHapticFeedback('success'); // Вибрация успеха
 
     downloadLinks.innerHTML = '';
 
