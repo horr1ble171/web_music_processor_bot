@@ -95,16 +95,38 @@
     </div>
 
     <div class="modal-overlay" id="downloadModal">
-        <div class="modal">
-            <div class="modal-title">Обработка завершена</div>
-            <div class="modal-content">
-                <p>Файлы успешно обработаны и готовы к скачиванию</p>
-                <p><small>Нажмите на название файла для скачивания</small></p>
-                <p><small>Для мобильных устройств: нажмите и удерживайте ссылку, затем выберите "Скачать"</small></p>
+        <div class="modal full-screen-modal">
+            <div class="modal-inner-wrapper">
+                <div class="modal-title">Обработка завершена</div>
+                <div class="modal-content">
+                    <p id="successMessage">Файлы успешно обработаны.</p>
+                </div>
+
+                <div id="processed-files-container"></div>
+
+                <div class="modal-actions">
+                    <button class="button" id="downloadAllButton" style="display: none;">Скачать все</button>
+                    <button class="modal-close-button" id="closeDownloadModalButton">Готово</button>
+                </div>
             </div>
-            <div id="downloadLinks"></div>
         </div>
     </div>
+
+    <template id="processed-file-card-template">
+        <div class="processed-file-card">
+            <img class="processed-file-cover" src="" alt="Обложка">
+            <div class="processed-file-info">
+                <div class="processed-file-title"></div>
+                <div class="processed-file-artist"></div>
+                <div class="processed-file-album"></div>
+            </div>
+            <a class="download-button-icon" href="#" download title="Скачать">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
+                </svg>
+            </a>
+        </div>
+    </template>
 
     <script src="script.js"></script>
 </body>
