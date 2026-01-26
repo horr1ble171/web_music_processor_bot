@@ -29,6 +29,10 @@ body {
     position: relative;
 }
 
+body.no-scroll {
+    overflow: hidden;
+}
+
 body::before {
     content: '';
     position: fixed;
@@ -224,33 +228,53 @@ body.mini-app-mode {
     border-radius: 8px;
     background: var(--bg-tertiary);
     transition: var(--transition);
-    min-height: 60px;
+    min-height: 70px; /* Увеличил высоту для контента */
+    gap: 12px;
 }
 
 .file-item:hover {
     border-color: var(--accent);
 }
 
+/* Стили для миниатюры обложки в списке файлов */
+.file-thumb {
+    width: 48px;
+    height: 48px;
+    border-radius: 6px;
+    object-fit: cover;
+    background: #222;
+    flex-shrink: 0;
+}
+
 .file-info {
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 2px;
     min-width: 0;
     overflow: hidden;
 }
 
 .file-name {
-    font-weight: 500;
+    font-weight: 600;
     color: var(--text-primary);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
     min-width: 0;
+    font-size: 14px;
+}
+
+.file-meta {
+    font-size: 12px;
+    color: var(--text-secondary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .file-size {
-    font-size: 12px;
+    font-size: 11px;
     color: var(--text-tertiary);
     overflow: hidden;
     text-overflow: ellipsis;
@@ -260,24 +284,25 @@ body.mini-app-mode {
 .file-remove {
     color: var(--error);
     cursor: pointer;
-    margin-left: 12px;
+    margin-left: 8px;
     font-weight: bold;
     font-size: 18px;
     transition: var(--transition);
-    padding: 8px;
     flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    min-width: 24px;
-    height: 24px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    line-height: 1;
+    padding-bottom: 2px;
 }
 
 .file-remove:hover {
     color: #ff6666;
     transform: scale(1.1);
     background: rgba(255, 51, 51, 0.1);
-    border-radius: 50%;
 }
 
 /* Preview Container for Cover Image */
@@ -369,6 +394,40 @@ body.mini-app-mode {
     text-align: center;
     position: relative;
     animation: modalSlideIn 0.3s ease-out;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Full Screen Modal Style */
+.full-screen-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    max-width: 100%;
+    max-height: 100%;
+    border-radius: 0;
+    border: none;
+    padding: 0;
+    margin: 0;
+    overflow-y: auto;
+    z-index: 1001;
+    background: var(--bg-primary);
+    display: flex;
+    flex-direction: column;
+}
+
+/* Внутренняя обертка для контента модального окна */
+.modal-inner-wrapper {
+    width: 100%;
+    max-width: 500px;
+    margin: auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    min-height: min-content;
 }
 
 @keyframes modalSlideIn {
@@ -387,11 +446,15 @@ body.mini-app-mode {
     font-weight: 600;
     margin-bottom: 16px;
     color: var(--text-primary);
+    flex-shrink: 0;
+    text-align: center;
 }
 
 .modal-content {
-    margin-bottom: 24px;
+    margin-bottom: 16px;
     color: var(--text-secondary);
+    flex-shrink: 0;
+    text-align: center;
 }
 
 .modal-content p {
@@ -401,6 +464,15 @@ body.mini-app-mode {
 .modal-content small {
     color: var(--text-tertiary);
     font-size: 14px;
+}
+
+.modal-actions {
+    margin-top: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    flex-shrink: 0;
+    padding-bottom: 20px;
 }
 
 /* Spinner */
@@ -452,42 +524,108 @@ body.mini-app-mode {
     border-radius: 2px;
 }
 
-/* Download Links */
-.download-button {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 14px 20px;
-    background: var(--accent);
-    color: var(--bg-primary);
-    text-decoration: none;
-    border-radius: var(--radius);
-    font-weight: 600;
-    transition: var(--transition);
-    margin: 8px 0;
-    border: none;
-    cursor: pointer;
+/* Processed Files List */
+#processed-files-container {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
     width: 100%;
-    font-size: 14px;
-    text-align: center;
+    overflow: visible;
+    margin-bottom: 8px;
 }
 
-.download-button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(255, 255, 255, 0.15);
+.processed-file-card {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: var(--bg-tertiary);
+    padding: 16px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    text-align: left;
+    position: relative;
+}
+
+.processed-file-cover {
+    width: 100px;
+    height: 100px;
+    border-radius: 8px;
+    object-fit: cover;
+    flex-shrink: 0;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.processed-file-info {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+    padding-right: 8px;
+}
+
+.processed-file-title {
+    font-weight: 700;
+    color: var(--text-primary);
+    font-size: 18px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.processed-file-artist {
+    font-size: 16px;
+    color: var(--text-primary);
+    opacity: 0.9;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.processed-file-album {
+    font-size: 14px;
+    color: var(--text-tertiary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.download-button-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    background: var(--accent);
+    color: var(--bg-primary);
+    border-radius: 50%;
+    transition: var(--transition);
+    flex-shrink: 0;
+    cursor: pointer;
+}
+
+.download-button-icon:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 15px rgba(255, 255, 255, 0.3);
+}
+
+.download-button-icon svg {
+    width: 24px;
+    height: 24px;
+    fill: currentColor;
 }
 
 .modal-close-button {
     background: var(--accent);
     color: var(--bg-primary);
     border: none;
-    padding: 14px 24px;
+    padding: 18px 24px;
     border-radius: var(--radius);
     font-weight: 600;
     cursor: pointer;
     transition: var(--transition);
-    margin-top: 16px;
     width: 100%;
+    font-size: 16px;
 }
 
 .modal-close-button:hover {
@@ -543,6 +681,14 @@ body.mini-app-mode {
         padding: 24px;
     }
 
+    .full-screen-modal {
+        padding: 0;
+    }
+
+    .modal-inner-wrapper {
+        padding: 16px;
+    }
+
     .input {
         padding: 14px;
     }
@@ -556,25 +702,40 @@ body.mini-app-mode {
         min-height: 120px;
     }
 
-    .download-button {
-        padding: 12px 16px;
-        font-size: 13px;
-    }
-
     .file-item {
         padding: 10px 12px;
-        min-height: 56px;
+        min-height: 64px;
     }
 
     .file-name {
         font-size: 14px;
     }
 
-    .file-remove {
-        padding: 6px;
-        min-width: 20px;
-        height: 20px;
+    .processed-file-cover {
+        width: 80px;
+        height: 80px;
+    }
+
+    .processed-file-title {
         font-size: 16px;
+    }
+
+    .processed-file-artist {
+        font-size: 14px;
+    }
+
+    .processed-file-album {
+        font-size: 12px;
+    }
+
+    .download-button-icon {
+        width: 40px;
+        height: 40px;
+    }
+
+    .download-button-icon svg {
+        width: 20px;
+        height: 20px;
     }
 }
 
@@ -593,18 +754,4 @@ body.mini-app-mode {
 ::-moz-selection {
     background: rgba(255, 255, 255, 0.2);
     color: var(--text-primary);
-}
-
-/* Mobile specific fixes */
-@media (max-width: 768px) {
-    .modal-content small {
-        font-size: 12px;
-        line-height: 1.4;
-    }
-
-    .download-button {
-        word-break: break-all;
-        white-space: normal;
-        line-height: 1.4;
-    }
 }
