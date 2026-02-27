@@ -453,6 +453,36 @@ async function handleDownloadAll() {
     }
 }
 
+// Функция загрузки на Catbox.moe
+async function uploadToCatbox(file) {
+    const formData = new FormData();
+    formData.append('reqtype', 'fileupload');
+    formData.append('fileToUpload', file);
+
+    const response = await fetch('https://catbox.moe/user/api.php', {
+        method: 'POST',
+        body: formData
+    });
+
+    if (!response.ok) {
+        throw new Error(`Catbox error: ${response.status}`);
+    }
+    return await response.text();
+}
+
+// Функция загрузки на Transfer.sh (запасной вариант)
+async function uploadToTransferSh(file) {
+    const response = await fetch('https://transfer.sh/' + encodeURIComponent(file.name), {
+        method: 'PUT',
+        body: file
+    });
+
+    if (!response.ok) {
+        throw new Error(`Transfer.sh error: ${response.status}`);
+    }
+    return await response.text();
+}
+
 async function handleSendToBot() {
     if (!appState.isTelegramWebApp) return;
     triggerHapticFeedback('medium');
@@ -467,32 +497,36 @@ async function handleSendToBot() {
         const filesData = [];
         const totalFiles = appState.processedFiles.length;
 
-        // Загружаем файлы на uguu.se
         for (let i = 0; i < totalFiles; i++) {
             const item = appState.processedFiles[i];
             sendToBotButton.textContent = `Загрузка ${i + 1}/${totalFiles}...`;
 
-            const formData = new FormData();
-            // Uguu.se ожидает массив files[]
-            formData.append('files[]', item.file);
+            let url = null;
+            let errorMsg = "";
 
-            const response = await fetch('https://uguu.se/upload.php', {
-                method: 'POST',
-                body: formData
-            });
+            // Попытка 1: Catbox.moe
+            try {
+                url = await uploadToCatbox(item.file);
+            } catch (e) {
+                console.warn("Catbox failed, trying fallback...", e);
+                errorMsg += `Catbox: ${e.message}. `;
 
-            if (!response.ok) {
-                throw new Error(`Ошибка загрузки ${item.file.name} (Status ${response.status})`);
+                // Попытка 2: Transfer.sh
+                try {
+                    url = await uploadToTransferSh(item.file);
+                } catch (e2) {
+                    console.error("Transfer.sh failed too", e2);
+                    errorMsg += `Transfer.sh: ${e2.message}`;
+                }
             }
 
-            const json = await response.json();
-            if (json.success && json.files && json.files.length > 0) {
+            if (url) {
                 filesData.push({
                     filename: item.file.name,
-                    url: json.files[0].url
+                    url: url.trim()
                 });
             } else {
-                 throw new Error(`Ошибка сервиса загрузки для ${item.file.name}`);
+                 throw new Error(`Не удалось загрузить ${item.file.name}. ${errorMsg}`);
             }
         }
 
