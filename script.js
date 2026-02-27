@@ -11,6 +11,7 @@ const appState = {
 let blurBackground, processingModal, downloadModal, processedFilesContainer, progressFill, progressText;
 let processButton, audioFilesInput, coverImageInput, coverPreview, coverPreviewContainer;
 let trackTitleInput, artistNameInput, albumNameInput, audioFileList, coverFileList, closeDownloadModalButton, downloadAllButton, successMessage;
+let sendToBotButton;
 
 // Инициализация Telegram Web App
 function initTelegramWebApp() {
@@ -55,6 +56,7 @@ function initDOMElements() {
     closeDownloadModalButton = document.getElementById('closeDownloadModalButton');
     downloadAllButton = document.getElementById('downloadAllButton');
     successMessage = document.getElementById('successMessage');
+    sendToBotButton = document.getElementById('sendToBotButton');
 }
 
 // Инициализация обработчиков событий
@@ -71,6 +73,7 @@ function initInputListeners() {
     });
 
     downloadAllButton.addEventListener('click', handleDownloadAll);
+    sendToBotButton.addEventListener('click', handleSendToBot);
 
     [trackTitleInput, artistNameInput, albumNameInput].forEach(input => {
         input.addEventListener('input', validateForm);
@@ -426,6 +429,13 @@ function showDownloadModal() {
         downloadAllButton.style.display = 'none';
     }
 
+    // Показываем кнопку "Отправить в бота" только если мы в Telegram Web App
+    if (appState.isTelegramWebApp) {
+        sendToBotButton.style.display = 'block';
+    } else {
+        sendToBotButton.style.display = 'none';
+    }
+
     downloadModal.classList.add('active');
     document.body.classList.add('no-scroll');
 }
@@ -440,6 +450,65 @@ async function handleDownloadAll() {
         link.click();
         document.body.removeChild(link);
         await new Promise(resolve => setTimeout(resolve, 500));
+    }
+}
+
+async function handleSendToBot() {
+    if (!appState.isTelegramWebApp) return;
+    triggerHapticFeedback('medium');
+
+    if (appState.processedFiles.length === 0) return;
+
+    // Показываем лоадер или блокируем кнопку
+    sendToBotButton.disabled = true;
+    sendToBotButton.textContent = 'Загрузка...';
+
+    try {
+        const filesData = [];
+        const totalFiles = appState.processedFiles.length;
+
+        // Загружаем файлы на временный хостинг, так как sendData имеет лимит 4096 байт
+        for (let i = 0; i < totalFiles; i++) {
+            const item = appState.processedFiles[i];
+            sendToBotButton.textContent = `Загрузка ${i + 1}/${totalFiles}...`;
+
+            const formData = new FormData();
+            formData.append('file', item.file);
+
+            // Используем file.io (файл удаляется после 1 скачивания)
+            const response = await fetch('https://file.io/?expires=1d', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) {
+                throw new Error(`Ошибка загрузки ${item.file.name}`);
+            }
+
+            const result = await response.json();
+            if (result.success) {
+                filesData.push({
+                    filename: item.file.name,
+                    url: result.link
+                });
+            } else {
+                 throw new Error(`Ошибка сервиса загрузки для ${item.file.name}`);
+            }
+        }
+
+        const data = {
+            type: 'processed_files_batch',
+            files: filesData
+        };
+
+        const jsonString = JSON.stringify(data);
+        window.Telegram.WebApp.sendData(jsonString);
+
+    } catch (e) {
+        console.error("Error sending to bot:", e);
+        showError("Ошибка отправки: " + e.message);
+        sendToBotButton.disabled = false;
+        sendToBotButton.textContent = 'Отправить в бота';
     }
 }
 
@@ -522,6 +591,11 @@ function resetAppState() {
     if (progressFill) progressFill.style.width = '0%';
     if (progressText) progressText.textContent = 'Обработано: 0/0';
     if (downloadAllButton) downloadAllButton.style.display = 'none';
+    if (sendToBotButton) {
+        sendToBotButton.style.display = 'none';
+        sendToBotButton.disabled = false;
+        sendToBotButton.textContent = 'Отправить в бота';
+    }
 }
 
 function initFileInputReset() {
