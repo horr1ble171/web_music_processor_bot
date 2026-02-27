@@ -467,16 +467,16 @@ async function handleSendToBot() {
         const filesData = [];
         const totalFiles = appState.processedFiles.length;
 
-        // Загружаем файлы на tmpfiles.org
+        // Загружаем файлы на uguu.se
         for (let i = 0; i < totalFiles; i++) {
             const item = appState.processedFiles[i];
             sendToBotButton.textContent = `Загрузка ${i + 1}/${totalFiles}...`;
 
             const formData = new FormData();
-            formData.append('file', item.file);
+            // Uguu.se ожидает массив files[]
+            formData.append('files[]', item.file);
 
-            // Используем tmpfiles.org
-            const response = await fetch('https://tmpfiles.org/api/v1/upload', {
+            const response = await fetch('https://uguu.se/upload.php', {
                 method: 'POST',
                 body: formData
             });
@@ -486,15 +486,10 @@ async function handleSendToBot() {
             }
 
             const json = await response.json();
-            if (json.status === 'success') {
-                // Преобразуем ссылку в прямую для скачивания
-                // Было: https://tmpfiles.org/123/file.mp3
-                // Стало: https://tmpfiles.org/dl/123/file.mp3
-                let directUrl = json.data.url.replace('tmpfiles.org/', 'tmpfiles.org/dl/');
-
+            if (json.success && json.files && json.files.length > 0) {
                 filesData.push({
                     filename: item.file.name,
-                    url: directUrl
+                    url: json.files[0].url
                 });
             } else {
                  throw new Error(`Ошибка сервиса загрузки для ${item.file.name}`);
