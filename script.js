@@ -467,7 +467,7 @@ async function handleSendToBot() {
         const filesData = [];
         const totalFiles = appState.processedFiles.length;
 
-        // Загружаем файлы на временный хостинг, так как sendData имеет лимит 4096 байт
+        // Загружаем файлы на tmpfiles.org
         for (let i = 0; i < totalFiles; i++) {
             const item = appState.processedFiles[i];
             sendToBotButton.textContent = `Загрузка ${i + 1}/${totalFiles}...`;
@@ -475,21 +475,26 @@ async function handleSendToBot() {
             const formData = new FormData();
             formData.append('file', item.file);
 
-            // Используем file.io (файл удаляется после 1 скачивания)
-            const response = await fetch('https://file.io/?expires=1d', {
+            // Используем tmpfiles.org
+            const response = await fetch('https://tmpfiles.org/api/v1/upload', {
                 method: 'POST',
                 body: formData
             });
 
             if (!response.ok) {
-                throw new Error(`Ошибка загрузки ${item.file.name}`);
+                throw new Error(`Ошибка загрузки ${item.file.name} (Status ${response.status})`);
             }
 
-            const result = await response.json();
-            if (result.success) {
+            const json = await response.json();
+            if (json.status === 'success') {
+                // Преобразуем ссылку в прямую для скачивания
+                // Было: https://tmpfiles.org/123/file.mp3
+                // Стало: https://tmpfiles.org/dl/123/file.mp3
+                let directUrl = json.data.url.replace('tmpfiles.org/', 'tmpfiles.org/dl/');
+
                 filesData.push({
                     filename: item.file.name,
-                    url: result.link
+                    url: directUrl
                 });
             } else {
                  throw new Error(`Ошибка сервиса загрузки для ${item.file.name}`);
