@@ -11,7 +11,6 @@ const appState = {
 let blurBackground, processingModal, downloadModal, processedFilesContainer, progressFill, progressText;
 let processButton, audioFilesInput, coverImageInput, coverPreview, coverPreviewContainer;
 let trackTitleInput, artistNameInput, albumNameInput, audioFileList, coverFileList, closeDownloadModalButton, downloadAllButton, successMessage;
-let sendToBotButton;
 
 // Инициализация Telegram Web App
 function initTelegramWebApp() {
@@ -56,7 +55,6 @@ function initDOMElements() {
     closeDownloadModalButton = document.getElementById('closeDownloadModalButton');
     downloadAllButton = document.getElementById('downloadAllButton');
     successMessage = document.getElementById('successMessage');
-    sendToBotButton = document.getElementById('sendToBotButton');
 }
 
 // Инициализация обработчиков событий
@@ -73,7 +71,6 @@ function initInputListeners() {
     });
 
     downloadAllButton.addEventListener('click', handleDownloadAll);
-    sendToBotButton.addEventListener('click', handleSendToBot);
 
     [trackTitleInput, artistNameInput, albumNameInput].forEach(input => {
         input.addEventListener('input', validateForm);
@@ -429,13 +426,6 @@ function showDownloadModal() {
         downloadAllButton.style.display = 'none';
     }
 
-    // Показываем кнопку "Отправить в бота" только если мы в Telegram Web App
-    if (appState.isTelegramWebApp) {
-        sendToBotButton.style.display = 'block';
-    } else {
-        sendToBotButton.style.display = 'none';
-    }
-
     downloadModal.classList.add('active');
     document.body.classList.add('no-scroll');
 }
@@ -450,99 +440,6 @@ async function handleDownloadAll() {
         link.click();
         document.body.removeChild(link);
         await new Promise(resolve => setTimeout(resolve, 500));
-    }
-}
-
-// Функция загрузки на Catbox.moe
-async function uploadToCatbox(file) {
-    const formData = new FormData();
-    formData.append('reqtype', 'fileupload');
-    formData.append('fileToUpload', file);
-
-    const response = await fetch('https://catbox.moe/user/api.php', {
-        method: 'POST',
-        body: formData
-    });
-
-    if (!response.ok) {
-        throw new Error(`Catbox error: ${response.status}`);
-    }
-    return await response.text();
-}
-
-// Функция загрузки на Transfer.sh (запасной вариант)
-async function uploadToTransferSh(file) {
-    const response = await fetch('https://transfer.sh/' + encodeURIComponent(file.name), {
-        method: 'PUT',
-        body: file
-    });
-
-    if (!response.ok) {
-        throw new Error(`Transfer.sh error: ${response.status}`);
-    }
-    return await response.text();
-}
-
-async function handleSendToBot() {
-    if (!appState.isTelegramWebApp) return;
-    triggerHapticFeedback('medium');
-
-    if (appState.processedFiles.length === 0) return;
-
-    // Показываем лоадер или блокируем кнопку
-    sendToBotButton.disabled = true;
-    sendToBotButton.textContent = 'Загрузка...';
-
-    try {
-        const filesData = [];
-        const totalFiles = appState.processedFiles.length;
-
-        for (let i = 0; i < totalFiles; i++) {
-            const item = appState.processedFiles[i];
-            sendToBotButton.textContent = `Загрузка ${i + 1}/${totalFiles}...`;
-
-            let url = null;
-            let errorMsg = "";
-
-            // Попытка 1: Catbox.moe
-            try {
-                url = await uploadToCatbox(item.file);
-            } catch (e) {
-                console.warn("Catbox failed, trying fallback...", e);
-                errorMsg += `Catbox: ${e.message}. `;
-
-                // Попытка 2: Transfer.sh
-                try {
-                    url = await uploadToTransferSh(item.file);
-                } catch (e2) {
-                    console.error("Transfer.sh failed too", e2);
-                    errorMsg += `Transfer.sh: ${e2.message}`;
-                }
-            }
-
-            if (url) {
-                filesData.push({
-                    filename: item.file.name,
-                    url: url.trim()
-                });
-            } else {
-                 throw new Error(`Не удалось загрузить ${item.file.name}. ${errorMsg}`);
-            }
-        }
-
-        const data = {
-            type: 'processed_files_batch',
-            files: filesData
-        };
-
-        const jsonString = JSON.stringify(data);
-        window.Telegram.WebApp.sendData(jsonString);
-
-    } catch (e) {
-        console.error("Error sending to bot:", e);
-        showError("Ошибка отправки: " + e.message);
-        sendToBotButton.disabled = false;
-        sendToBotButton.textContent = 'Отправить в бота';
     }
 }
 
@@ -625,11 +522,6 @@ function resetAppState() {
     if (progressFill) progressFill.style.width = '0%';
     if (progressText) progressText.textContent = 'Обработано: 0/0';
     if (downloadAllButton) downloadAllButton.style.display = 'none';
-    if (sendToBotButton) {
-        sendToBotButton.style.display = 'none';
-        sendToBotButton.disabled = false;
-        sendToBotButton.textContent = 'Отправить в бота';
-    }
 }
 
 function initFileInputReset() {
