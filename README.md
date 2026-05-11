@@ -1,4 +1,4 @@
-# [Web Music Processor Bot](https://t.me/music_horr1ble_bot)
+# [Web Music Processor Bot](https://horr1ble171.github.io/web_music_processor_bot/)
 
 Современное веб-приложение (Telegram Web App) для быстрого и удобного редактирования метаданных MP3-файлов прямо в браузере.
 
