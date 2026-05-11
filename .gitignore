@@ -1,0 +1,15 @@
+# IDE-specific files
+.idea/
+
+# Python-specific files (if any backend or local scripts are in Python)
+__pycache__/
+*.pyc
+
+# Operating System files
+.DS_Store
+
+# Dependencies (if you ever add Node.js dependencies)
+# node_modules/
+
+# Log files
+*.log
